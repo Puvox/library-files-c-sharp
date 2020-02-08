@@ -19,19 +19,19 @@ using System.Security.Cryptography;
 using Google.Cloud.Speech.V1;
 using System.Threading;
 
-namespace MySharedLibrary
+namespace PuvoxLibrary
 {
 
     // here is the name:   (we can use: private NinjaTrader.NinjaScript.AddOns.mymethodstt my = new NinjaTrader.NinjaScript.AddOns.mymethodstt();
     public partial class GoogleSpeech_ 
     {
 		private SpeechTyperForWord.Form1 frm;
-        MySharedLibrary.Methods my;
+        PuvoxLibrary.Program program;
 
-        public GoogleSpeech_(SpeechTyperForWord.Form1 frm_, MySharedLibrary.Methods my_)
+        public GoogleSpeech_(SpeechTyperForWord.Form1 frm_, PuvoxLibrary.Program program_)
         {
             frm = frm_;
-            my = my_;
+            program = program_;
         }
 
 
@@ -118,7 +118,7 @@ namespace MySharedLibrary
 
             secondsLong = seconds;
             frm.GS_Record("initiated");
-            if (NAudio.Wave.WaveIn.DeviceCount < 1) { my.message("No microphone!"); return -1; }
+            if (NAudio.Wave.WaveIn.DeviceCount < 1) { PuvoxLibrary.Methods.m("No microphone!"); return -1; }
 
             streamingCall = SpeechClient.Create().StreamingRecognize();
 
@@ -206,7 +206,7 @@ namespace MySharedLibrary
                                 }
                             ).Wait();
                         }
-                        catch (Exception e) { my.message(e.Message); }
+                        catch (Exception e) { PuvoxLibrary.Methods.m(e.Message); }
                     }
                 };
 

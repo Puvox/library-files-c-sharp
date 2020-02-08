@@ -27,12 +27,12 @@ namespace ttLibrary
     public partial class GoogleSpeech_
     {
         private SpeechTyperForWord.Form1 frm;
-        ttLibrary.Methods my;
+        PuvoxLibrary.Program program;
 
-        public GoogleSpeech_(SpeechTyperForWord.Form1 frm_, ttLibrary.Methods my_)
+        public GoogleSpeech_(SpeechTyperForWord.Form1 frm_, PuvoxLibrary.Program program_)
         {
             frm = frm_;
-            my = my_;
+            program = program_;
         }
 
 
@@ -131,7 +131,7 @@ namespace ttLibrary
                 accumulatedAudioAr.Clear();
                 secondsToWork = seconds;
 
-                if (NAudio.Wave.WaveIn.DeviceCount < 1) { my.message("No microphone!"); return -1; }
+                if (NAudio.Wave.WaveIn.DeviceCount < 1) { PuvoxLibrary.Methods.m("No microphone!"); return -1; }
 
                 await startRecFuncs();
                 if (!StoppButtoned)
@@ -144,7 +144,7 @@ namespace ttLibrary
             }
             catch (Exception e)
             {
-                my.m(e.Message);
+                PuvoxLibrary.Methods.m(e.Message);
                 return 0.0;
             }
         }
@@ -186,7 +186,7 @@ namespace ttLibrary
             }
             catch (Exception e)
             {
-                my.m(e.Message);
+                PuvoxLibrary.Methods.m(e.Message);
                 return;
             }
         }
@@ -222,7 +222,7 @@ namespace ttLibrary
             }
             catch (Exception e)
             {
-                my.m(e.Message);
+                PuvoxLibrary.Methods.m(e.Message);
                 return;
             }
         }
@@ -308,7 +308,7 @@ namespace ttLibrary
             }
             catch (Exception e)
             {
-                my.m(e.Message);
+                PuvoxLibrary.Methods.m(e.Message);
                 return;
             }
         }
@@ -328,7 +328,7 @@ namespace ttLibrary
             }
             catch (Exception e)
             {
-                my.m(e.Message);
+                PuvoxLibrary.Methods.m(e.Message);
                 return;
             }
         }
@@ -354,7 +354,7 @@ namespace ttLibrary
             }
             catch (Exception e)
             {
-                my.m(e.Message);
+                PuvoxLibrary.Methods.m(e.Message);
                 return;
             }
         }
@@ -424,7 +424,7 @@ namespace ttLibrary
                             }
                             */
                             }
-                            catch (Exception e) { my.message(e.Message); }
+                            catch (Exception e) { PuvoxLibrary.Methods.m(e.Message); }
                         }
                     };
 
@@ -432,7 +432,7 @@ namespace ttLibrary
             }
             catch (Exception e)
             {
-                my.m(e.Message);
+                PuvoxLibrary.Methods.m(e.Message);
                 return;
             }
         }
@@ -574,7 +574,7 @@ namespace ttLibrary
             }
             catch (Exception e)
             {
-                my.m(e.Message);
+                PuvoxLibrary.Methods.m(e.Message);
                 return new byte[0];
             }
         }
@@ -591,7 +591,7 @@ namespace ttLibrary
             }
             catch (Exception e)
             {
-                my.m(e.Message);
+                PuvoxLibrary.Methods.m(e.Message);
                 return new byte[0];
             }
         }
@@ -607,7 +607,7 @@ namespace ttLibrary
             }
             catch (Exception e)
             {
-                my.m(e.Message);
+                PuvoxLibrary.Methods.m(e.Message);
                 return new byte[0];
             }
         }

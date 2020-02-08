@@ -22,15 +22,16 @@ using System.Threading;
 using System.Timers;
 using System.Web.Script.Serialization;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Win32;
+/*
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using NinjaTrader.Cbi;
 using NinjaTrader.Code;
 using NinjaTrader.Core;
@@ -46,6 +47,7 @@ using NinjaTrader.NinjaScript.Strategies;
 using SharpDX;
 using SharpDX.Direct2D1;
 using SharpDX.DirectWrite;
+*/
 
 #region Program properties
 namespace PuvoxLibrary
@@ -178,63 +180,80 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
+
+
+
+		public string regBase = "SOFTWARE\\MyCompany\\";
+		public string getRegistryValue(string key)
+		{
+			return PuvoxLibrary.Methods.getRegistryValue(regBase + "\\" + key);
+		}
+		public bool setRegistryValue(string key)
+		{
+			return PuvoxLibrary.Methods.setRegistryValue(regBase + "\\" + key);
+		}
 	}
 }
 #endregion
+
+
+
+
+
 
 
 namespace PuvoxLibrary
 {
 	public partial class Methods
 	{
-		private string ProgramName_ ="";
-		public string ProgramName { get { if (ProgramName_=="") { m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); }  return ProgramName_; } set{ProgramName_ = value;} }
-		
-		public string Language;
-		public string Name;
-		public string Slug;
-		public double Version;
-		public string BaseProductUrl;
-		public string responseUrl;
-		public string RegRootOfThisProg;
-		public string infoUrl;
-		public string contactUrl;
-		public string AppNameRegex = "(XYZXYZ)";
-		public bool isDevelopment;
-		public string baseDomain = "https://puvox.software/";
-		public string baseResponsePath = "program-responses.php?";
-		public string baseCompanyName = "Puvox";
-		public string baseContactPath = "contact";
+		private string ProgramName_ = "";
+		public static string ProgramName { get { if (ProgramName_ == "") { m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); } return ProgramName_; } set { ProgramName_ = value; } }
+
+		public static string Language;
+		public static string Name;
+		public static string Slug;
+		public static double Version;
+		public static string BaseProductUrl;
+		public static string responseUrl;
+		public static string RegRootOfThisProg;
+		public static string infoUrl;
+		public static string contactUrl;
+		public static string AppNameRegex = "(XYZXYZ)";
+		public static bool isDevelopment;
+		public static string baseDomain = "https://puvox.software/";
+		public static string baseResponsePath = "program-responses.php?";
+		public static string baseCompanyName = "Puvox";
+		public static string baseContactPath = "contact";
 		public static string developerMachineString = "puvox_development_machine";
-		public bool Development_Mode;
-		public bool initialized;
-		public Dictionary<string, string> TheNames;
-		public string mainResponse_string;
+		public static bool Development_Mode;
+		public static bool initialized;
+		public static Dictionary<string, string> TheNames;
+		public static string mainResponse_string;
 		private Dictionary<string, string> mainResponse;
-		public bool debug_show_response;
+		public static bool debug_show_response;
 		public static string mainDrive = Path.GetPathRoot(Environment.SystemDirectory);
-		
+
 		private Dictionary<string, string> symbols = new Dictionary<string, string>
 		{
 			{ "checkmark", "?" },
 			{ "checkmark2", "\ud83d\uddf9" }
 		};
-		
-		
-		
-		
-		
-		
+
+
+
+
+
+
 		#region DateTime
-			
+
 		//  0940 type time-ints
 		public static bool isBetween(DateTime target, DateTime start, DateTime end, bool equality)
 		{
-			int num_middle  = int.Parse(target.ToString("HHmm"));
+			int num_middle = int.Parse(target.ToString("HHmm"));
 			int num2 = int.Parse(start.ToString("HHmm"));
 			int num3 = int.Parse(end.ToString("HHmm"));
-			return ( equality ? num_middle >= num2 && num_middle <= num3 :  num_middle > num2 && num_middle < num3);
+			return (equality ? num_middle >= num2 && num_middle <= num3 : num_middle > num2 && num_middle < num3);
 		}
 		public static bool isBetween(DateTime target, int start, int end)
 		{
@@ -242,8 +261,8 @@ namespace PuvoxLibrary
 			return num >= start && num < end;
 		}
 
-			#region Demo(Trial) period checks
-		public bool workTillDate(string program_slug, string dateTill)
+		#region Demo(Trial) period checks
+		public static bool workTillDate(string program_slug, string dateTill)
 		{
 			bool result;
 			try
@@ -266,11 +285,11 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		private bool demoPeriodGone_shown;
 		private bool demoPeriodGone_disallow;
 		// "yyyy-MM-dd"
-		public bool demoPeriodGone(string message, string dateTill)
+		public static bool demoPeriodGone(string message, string dateTill)
 		{
 			if (demoPeriodGone_shown)
 			{
@@ -292,26 +311,26 @@ namespace PuvoxLibrary
 			}
 			return demoPeriodGone_disallow;
 		}
-			#endregion
-		
+		#endregion
 
-        public string timeIntToString(int timenow)
-        {
-            // timenow is i.e. 061055
-            string t = timenow.ToString();
-            string str = t.Length <= 1 ? "00000" + t : (t.Length <= 2 ? "0000" + t : (t.Length <= 3 ? "000" + t : (t.Length <= 4 ? "00" + t : (t.Length <= 5 ? "0" + t : t))));
-            return str;
-        }
 
-        public TimeSpan timeIntToTimeSpan(int timenow)
-        {
-            DateTime dt;
-            DateTime.TryParseExact( timeIntToString(timenow), "HHmmss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out dt);
-            return dt.TimeOfDay;
-        }
+		public static string timeIntToString(int timenow)
+		{
+			// timenow is i.e. 061055
+			string t = timenow.ToString();
+			string str = t.Length <= 1 ? "00000" + t : (t.Length <= 2 ? "0000" + t : (t.Length <= 3 ? "000" + t : (t.Length <= 4 ? "00" + t : (t.Length <= 5 ? "0" + t : t))));
+			return str;
+		}
 
-		
-		
+		public static TimeSpan timeIntToTimeSpan(int timenow)
+		{
+			DateTime dt;
+			DateTime.TryParseExact(timeIntToString(timenow), "HHmmss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out dt);
+			return dt.TimeOfDay;
+		}
+
+
+
 		public static int CorrectTime(int timenow, int added_or_subtracted)
 		{
 			TimeSpan timeSpan = new TimeSpan(timenow / 100, timenow % 100, 0) + TimeSpan.FromMinutes((double)added_or_subtracted);
@@ -322,60 +341,60 @@ namespace PuvoxLibrary
 			return int.Parse(DateTime.ParseExact(timenow.ToString("0000"), "HHmm", null).AddMinutes((double)added_or_subtracted).ToString("HHmm"));
 		}
 
-		
-		public static int DateToTime(DateTime dt)		{			return dt.Hour * 100 + dt.Minute;		}
-		public static DateTime ToDateTime(string s) { return ToDateTime(s, "ddMMyyyy", "");		} 
-		public static DateTime ToDateTime(string s, string format)		{			return ToDateTime(s, format, "");		}
-        public static DateTime ToDateTime(string s, string format, string cultureString )
-        {    //tr-TR
-            CultureInfo _culture = (cultureString == "") ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(cultureString);
-            try
-            {
-                return DateTime.ParseExact(s: s, format: format, provider: _culture);
-            }
-            catch (FormatException) { throw; }
-            catch (Exception) { throw; } // Given Culture is not supported culture
-        }
 
-		
-	//i.e.    IsTimePeriod("start"
-		public bool IsTimePeriod(string type_, NinjaTrader.NinjaScript.NinjaScriptBase NS, int index ,int StartTime, int EndTime, bool useDayOrSession)
+		public static int DateToTime(DateTime dt) { return dt.Hour * 100 + dt.Minute; }
+		public static DateTime ToDateTime(string s) { return ToDateTime(s, "ddMMyyyy", ""); }
+		public static DateTime ToDateTime(string s, string format) { return ToDateTime(s, format, ""); }
+		public static DateTime ToDateTime(string s, string format, string cultureString)
+		{    //tr-TR
+			CultureInfo _culture = (cultureString == "") ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(cultureString);
+			try
+			{
+				return DateTime.ParseExact(s: s, format: format, provider: _culture);
+			}
+			catch (FormatException) { throw; }
+			catch (Exception) { throw; } // Given Culture is not supported culture
+		}
+
+
+		//i.e.    IsTimePeriod("start"
+		public static bool IsTimePeriod(string type_, DateTime time1, DateTime time0, int StartTime, int EndTime, bool useDayOrSession, bool Bars_IsFirstBarOfSession)
 		{
-			int curTime_0 = DateToTime(NS.Time[index+0]); 
-			int curTime_1 = DateToTime(NS.Time[index+1]);
-			bool SameDay	= StartTime < EndTime;
-			bool NotSameDay	= StartTime > EndTime;
-			
-			bool IsNewDay = useDayOrSession ? NS.Time[0].DayOfYear != NS.Time[1].DayOfYear : NS.Bars.IsFirstBarOfSession; 
-			bool isStart = 
-				( curTime_0 >= StartTime && ( curTime_1 < StartTime	|| IsNewDay ) ) 
+			int curTime_0 = DateToTime(time0);
+			int curTime_1 = DateToTime(time1);
+			bool SameDay = StartTime < EndTime;
+			bool NotSameDay = StartTime > EndTime;
+
+			bool IsNewDay = useDayOrSession ? time0.DayOfYear != time1.DayOfYear : Bars_IsFirstBarOfSession;
+			bool isStart =
+				(curTime_0 >= StartTime && (curTime_1 < StartTime || IsNewDay))
 							||
-				( IsNewDay && curTime_1 <= StartTime );
-			
-			bool is_inside 	=
-					( SameDay 	 &&  (curTime_0 >= StartTime && curTime_0 <= EndTime) )
+				(IsNewDay && curTime_1 <= StartTime);
+
+			bool is_inside =
+					(SameDay && (curTime_0 >= StartTime && curTime_0 <= EndTime))
 						||
-					( NotSameDay &&  (curTime_0 >= StartTime || curTime_0 <= EndTime) );
+					(NotSameDay && (curTime_0 >= StartTime || curTime_0 <= EndTime));
 			bool was_inside =
-				( SameDay 	 &&  (curTime_1 >= StartTime && curTime_1 <= EndTime) )
+				(SameDay && (curTime_1 >= StartTime && curTime_1 <= EndTime))
 					||
-				( NotSameDay &&  (curTime_1 >= StartTime || curTime_1 <= EndTime) );
-			
-			
-			if 		(type_ == "start") 
+				(NotSameDay && (curTime_1 >= StartTime || curTime_1 <= EndTime));
+
+
+			if (type_ == "start")
 				return isStart;
-			else if (type_ == "inside") 
+			else if (type_ == "inside")
 				return is_inside;
-			else if (type_ == "end") 
+			else if (type_ == "end")
 				return (!is_inside && was_inside);
-			
+
 			return false;
 		}
-		 
-		public string DateToTimeString(DateTime dt) 
-		{ 
-			return (dt.Hour < 10 ? "0" : "") + dt.Hour.ToString()+ ":"+ (dt.Minute<10 ? "0" : "") +dt.Minute.ToString();
-		}	
+
+		public static string DateToTimeString(DateTime dt)
+		{
+			return (dt.Hour < 10 ? "0" : "") + dt.Hour.ToString() + ":" + (dt.Minute < 10 ? "0" : "") + dt.Minute.ToString();
+		}
 
 		public static int HoursMinutes(DateTime time)
 		{
@@ -386,120 +405,125 @@ namespace PuvoxLibrary
 		{
 			return DateTime.ParseExact(cur_time.ToString("yyyy-M-dd") + timenow.ToString(" 0000"), "yyyy-M-dd HHmm", null);
 		}
-		
-		
-	    public static int GetWeekOfMonth(DateTime targetTime) {
-	        DateTime first = new DateTime(targetTime.Year, targetTime.Month, 1);
-	        return GetWeekOfYear(targetTime) - GetWeekOfYear(first) + 1;
-	    }
-		
-	    public static int GetWeekOfYear(DateTime targetTime) {
-	        return (new System.Globalization.GregorianCalendar()).GetWeekOfYear(targetTime, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday);
-	    }
-		
+
+
+		public static int GetWeekOfMonth(DateTime targetTime)
+		{
+			DateTime first = new DateTime(targetTime.Year, targetTime.Month, 1);
+			return GetWeekOfYear(targetTime) - GetWeekOfYear(first) + 1;
+		}
+
+		public static int GetWeekOfYear(DateTime targetTime)
+		{
+			return (new System.Globalization.GregorianCalendar()).GetWeekOfYear(targetTime, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+		}
+
 		public static int GetQuarter(DateTime targetTime)
 		{
 			int result = 0;
 			int month = targetTime.Month;
-			if 		(month <= 3) 				result = 1; 
-			else if (month > 3 && month <= 6) 	result = 2; 
-			else if (month > 6 && month <= 9)	result = 3;
-			else if (month > 9)					result = 4;
+			if (month <= 3) result = 1;
+			else if (month > 3 && month <= 6) result = 2;
+			else if (month > 6 && month <= 9) result = 3;
+			else if (month > 9) result = 4;
 			return result;
 		}
 		#endregion
-		
-		
-		
+
+
+
 		#region trading
-				 
-		public string opposite(string text){ 
-			if(text=="") return "";
-			
+
+		public static string opposite(string text)
+		{
+			if (text == "") return "";
+
 			// ===== long / short
-			else if(text=="LONG")	return "SHORT";
-			else if(text=="SHORT")	return "LONG";
-			else if(text=="Long")	return "Short";
-			else if(text=="Short")	return "Long";
-			else if(text=="long")	return "short";
-			else if(text=="short")	return "long";
+			else if (text == "LONG") return "SHORT";
+			else if (text == "SHORT") return "LONG";
+			else if (text == "Long") return "Short";
+			else if (text == "Short") return "Long";
+			else if (text == "long") return "short";
+			else if (text == "short") return "long";
 			//
-			else if(text=="L")		return "S";
-			else if(text=="S")		return "L";
-			else if(text=="l")		return "s";
-			else if(text=="s")		return "l";
-			
+			else if (text == "L") return "S";
+			else if (text == "S") return "L";
+			else if (text == "l") return "s";
+			else if (text == "s") return "l";
+
 			// ===== buy / sell
-			else if(text=="BUY")	return "SELL";
-			else if(text=="SELL")	return "BUY";
-			else if(text=="Buy")	return "Sell";
-			else if(text=="Sell")	return "Buy";
-			else if(text=="buy")	return "sell";
-			else if(text=="sell")	return "buy";
+			else if (text == "BUY") return "SELL";
+			else if (text == "SELL") return "BUY";
+			else if (text == "Buy") return "Sell";
+			else if (text == "Sell") return "Buy";
+			else if (text == "buy") return "sell";
+			else if (text == "sell") return "buy";
 			//
-			else if(text=="B")		return "S";
-			else if(text=="S")		return "B";
-			else if(text=="b")		return "s";
-			else if(text=="s")		return "b";
-			
+			else if (text == "B") return "S";
+			else if (text == "S") return "B";
+			else if (text == "b") return "s";
+			else if (text == "s") return "b";
+
 			// ===== above / below
-			else if(text=="ABOVE")	return "BELOW";
-			else if(text=="BELOW")	return "ABOVE";
-			else if(text=="Above")	return "Below";
-			else if(text=="Below")	return "Above";
-			else if(text=="above")	return "below";
-			else if(text=="below")	return "above";
-			
+			else if (text == "ABOVE") return "BELOW";
+			else if (text == "BELOW") return "ABOVE";
+			else if (text == "Above") return "Below";
+			else if (text == "Below") return "Above";
+			else if (text == "above") return "below";
+			else if (text == "below") return "above";
+
 			return "";
 		}
-		
-		public bool is_Between(DateTime target, DateTime start, DateTime end){
-			int target_	=Int32.Parse(target.ToString("HHmm"));
-			int start_	=Int32.Parse(start.ToString("HHmm"));
-			int end_	=Int32.Parse(end.ToString("HHmm"));
-			return target_>=start_ && target_<end_;
-		}
-		
-		public bool is_Between(DateTime target, int start, int end){
-			int target_	=Int32.Parse(target.ToString("HHmm"));
-			int start_	=start;
-			int end_	=end;
-			return target_>=start_ && target_<end_;
-		}
-	
-		#endregion
-		
-		
 
-		public void createDefaultValues(object obj)
+		public static bool is_Between(DateTime target, DateTime start, DateTime end)
+		{
+			int target_ = Int32.Parse(target.ToString("HHmm"));
+			int start_ = Int32.Parse(start.ToString("HHmm"));
+			int end_ = Int32.Parse(end.ToString("HHmm"));
+			return target_ >= start_ && target_ < end_;
+		}
+
+		public static bool is_Between(DateTime target, int start, int end)
+		{
+			int target_ = Int32.Parse(target.ToString("HHmm"));
+			int start_ = start;
+			int end_ = end;
+			return target_ >= start_ && target_ < end_;
+		}
+
+		#endregion
+
+
+
+		public static void createDefaultValues(object obj)
 		{
 			foreach (PropertyDescriptor property in TypeDescriptor.GetProperties(obj))
-	        {
-	            DefaultValueAttribute myAttribute = (DefaultValueAttribute)property.Attributes[typeof(DefaultValueAttribute)];
+			{
+				DefaultValueAttribute myAttribute = (DefaultValueAttribute)property.Attributes[typeof(DefaultValueAttribute)];
 
-	            if (myAttribute != null)
-	            {
-	                property.SetValue(this, myAttribute.Value);
-	            }
-	        }
+				if (myAttribute != null)
+				{
+					property.SetValue(this, myAttribute.Value);
+				}
+			}
 		}
- 
-		
-		
-		public int digitsInNumber(object obj) 
+
+
+
+		public static int digitsInNumber(object obj)
 		{
-			return (int) Math.Ceiling(Math.Log10( (double)obj ));  //i.e. 12345.123 --->5
+			return (int)Math.Ceiling(Math.Log10((double)obj));  //i.e. 12345.123 --->5
 		}
 
-		
-        //https://stackoverflow.com/questions/13477689/find-number-of-decimal-places-in-decimal-value-regardless-of-culture | second variation: https://pastebin.com/KtwzB9Z6
-        public static int digitsAfterDot(double tickSize)   
-        {
-            var precision = 0;
-            while (tickSize * Math.Pow(10, precision) != Math.Round(tickSize * Math.Pow(10, precision)))
-                precision++;
-            return precision;
-        }
+
+		//https://stackoverflow.com/questions/13477689/find-number-of-decimal-places-in-decimal-value-regardless-of-culture | second variation: https://pastebin.com/KtwzB9Z6
+		public static int digitsAfterDot(double tickSize)
+		{
+			var precision = 0;
+			while (tickSize * Math.Pow(10, precision) != Math.Round(tickSize * Math.Pow(10, precision)))
+				precision++;
+			return precision;
+		}
 
 		public static int digitsAfterDot2(double tickSize)
 		{
@@ -508,17 +532,17 @@ namespace PuvoxLibrary
 			while (num != Math.Round(num, 0)) { num *= 10.0; num2++; }
 			return num2;
 		}
-		
-			//else if (content == 1E-05)	result = 5;
-			//else if (content == 5E-05)	result = 5;
-			//else if (content == 1E-06)	result = 6;
-			//else if (content == 5E-06)	result = 6;
-			//else if (content == 1E-07)	result = 7;
-			//else if (content == 5E-07)	result = 7;
 
-		
-		
-		
+		//else if (content == 1E-05)	result = 5;
+		//else if (content == 5E-05)	result = 5;
+		//else if (content == 1E-06)	result = 6;
+		//else if (content == 5E-06)	result = 6;
+		//else if (content == 1E-07)	result = 7;
+		//else if (content == 5E-07)	result = 7;
+
+
+
+
 
 		#region GlobalVariables
 		public static Dictionary<string, object> GlobalVariables = new Dictionary<string, object>();
@@ -526,40 +550,40 @@ namespace PuvoxLibrary
 		{
 			return (GlobalVariables.ContainsKey(param) ? GlobalVariables[param] : null);
 		}
-		
+
 		public static void setGlobalVar(string param, object value)
 		{
 			Methods.GlobalVariables[param] = value;
 		}
-		
-		#endregion
-		
 
-		
+		#endregion
+
+
+
 		#region Dictionary
-		
-        /*
-        public Dictionary<string, string> CopyDictionary(Dictionary<string, string> dict)
+
+		/*
+        public static Dictionary<string, string> CopyDictionary(Dictionary<string, string> dict)
         {
             return new Dictionary<string, string>(dict);  // //return dict.ToDictionary(entry => entry.Key,   entry => entry.Value);
         }
-        public Dictionary<string, int> CopyDictionary(Dictionary<string, int> dict)
+        public static Dictionary<string, int> CopyDictionary(Dictionary<string, int> dict)
         {
             return new Dictionary<string, int>(dict);  // //return dict.ToDictionary(entry => entry.Key,   entry => entry.Value);
         }
-        public Dictionary<string, double> CopyDictionary(Dictionary<string, double> dict)
+        public static Dictionary<string, double> CopyDictionary(Dictionary<string, double> dict)
         {
             return new Dictionary<string, double>(dict);  // //return dict.ToDictionary(entry => entry.Key,   entry => entry.Value);
         }
-        public Dictionary<string, bool> CopyDictionary(Dictionary<string, bool> dict)
+        public static Dictionary<string, bool> CopyDictionary(Dictionary<string, bool> dict)
         {
             return new Dictionary<string, bool>(dict);  // //return dict.ToDictionary(entry => entry.Key,   entry => entry.Value);
         }
         */
 
- 
- 
- 
+
+
+
 		private static string objectToXml(object output)
 		{
 			string result = "";
@@ -597,7 +621,7 @@ namespace PuvoxLibrary
 			return dictionary;
 		}
 
-		
+
 		public static int getIndexByKey(Dictionary<string, string> dict, string key)
 		{
 			List<KeyValuePair<string, string>> list = dict.ToList<KeyValuePair<string, string>>();
@@ -607,37 +631,38 @@ namespace PuvoxLibrary
 
 
 		public static Dictionary<string, string> SortDict(Dictionary<string, string> dict)
-        {
-            // Order by values.
-            //var items = from pair in dict      orderby pair.Value ascending       select pair;
-            // foreach (KeyValuePair<string, int> pair in items)  {  Console.WriteLine("{0}: {1}", pair.Key, pair.Value);  }
-            //return items.ToDictionary(x => x, x => x);try
-            try {
-                return (Dictionary<string, string>)(from entry in dict orderby entry.Value ascending select entry);
-            }
-            catch (Exception e)
-            { 
-                return new Dictionary<string, string>{ };
-            }
-            
-        }
-		
-        public static bool ContainsValue(Dictionary<int, double> myd, int indx) { return myd.ContainsKey(indx) && myd[indx] != double.NaN && HasValue(myd[indx]); }
-        public static bool ContainsValue(Dictionary<int, bool> myd, int indx) { return myd.ContainsKey(indx); }
-        public static bool ContainsValue(Dictionary<string, double> myd, string indx) { return myd.ContainsKey(indx) && myd[indx] != double.NaN && HasValue(myd[indx]); }
-        public bool ContainsValue(Dictionary<int, object> myd, int indx)	{ return myd.ContainsKey(indx) && myd[indx]!=null;	}
-		
+		{
+			// Order by values.
+			//var items = from pair in dict      orderby pair.Value ascending       select pair;
+			// foreach (KeyValuePair<string, int> pair in items)  {  Console.WriteLine("{0}: {1}", pair.Key, pair.Value);  }
+			//return items.ToDictionary(x => x, x => x);try
+			try
+			{
+				return (Dictionary<string, string>)(from entry in dict orderby entry.Value ascending select entry);
+			}
+			catch //(Exception e)
+			{
+				return new Dictionary<string, string> { };
+			}
+
+		}
+
+		public static bool ContainsValue(Dictionary<int, double> myd, int indx) { return myd.ContainsKey(indx) && myd[indx] != double.NaN && HasValue(myd[indx]); }
+		public static bool ContainsValue(Dictionary<int, bool> myd, int indx) { return myd.ContainsKey(indx); }
+		public static bool ContainsValue(Dictionary<string, double> myd, string indx) { return myd.ContainsKey(indx) && myd[indx] != double.NaN && HasValue(myd[indx]); }
+		public static bool ContainsValue(Dictionary<int, object> myd, int indx) { return myd.ContainsKey(indx) && myd[indx] != null; }
+
 		public static bool ContainsKey(NameValueCollection collection, string key)
 		{
 			return collection.Get(key) != null || collection.AllKeys.Contains(key);
 		}
-        //(int)Enum.Parse(typeof(TestAppAreana.MovieList.Movies), KeyVal);
- 
+		//(int)Enum.Parse(typeof(TestAppAreana.MovieList.Movies), KeyVal);
+
 		public static bool HasValue(double value)
 		{
 			return !double.IsNaN(value) && !double.IsInfinity(value);
 		}
-		
+
 
 		public static Dictionary<int, double> FindNearestValuesInDict(Dictionary<int, double> MyDict, double Target_value, int how_many_values_to_find)
 		{
@@ -653,7 +678,7 @@ namespace PuvoxLibrary
 				{
 					int index = flag ? i : (num - 1 - i);
 					int index2 = flag ? (num - 1 - i) : i;
-                    //remove all "grater than" occurences
+					//remove all "grater than" occurences
 					if (MyDict.Keys.ElementAtOrDefault(index) != 0)
 					{
 						int num4 = MyDict.Keys.ElementAt(index);
@@ -666,7 +691,7 @@ namespace PuvoxLibrary
 							}
 						}
 					}
-                    //remove all "lower than" occurences
+					//remove all "lower than" occurences
 					if (MyDict.Keys.ElementAtOrDefault(index2) != 0)
 					{
 						int num5 = MyDict.Keys.ElementAt(index2);
@@ -689,7 +714,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static bool DictIsAscendingOrDescending(Dictionary<int, double> MyDict)
 		{
 			int num = MyDict.Keys.Count<int>();
@@ -709,32 +734,32 @@ namespace PuvoxLibrary
 			return false;
 		}
 
-		
-
-        // another: 3.5 (but not in NT without reference) http://procbits.com/2011/04/21/quick-json-serializationdeserialization-in-c
-        // another: https://pastebin.com/raw/hAtAwA40
 
 
+		// another: 3.5 (but not in NT without reference) http://procbits.com/2011/04/21/quick-json-serializationdeserialization-in-c
+		// another: https://pastebin.com/raw/hAtAwA40
 
-		public string serialize2(object dict)
+
+
+		public static string serialize2(object dict)
 		{
-			if (dict is Dictionary<string, string>) return new JavaScriptSerializer().Serialize(  ((Dictionary<string, string>)dict).ToDictionary((KeyValuePair<string, string> item) => item.Key.ToString(), (KeyValuePair<string, string> item) => item.Value.ToString()));
+			if (dict is Dictionary<string, string>) return new JavaScriptSerializer().Serialize(((Dictionary<string, string>)dict).ToDictionary((KeyValuePair<string, string> item) => item.Key.ToString(), (KeyValuePair<string, string> item) => item.Value.ToString()));
 			//else Dictionary<string, object> dict
-			return new JavaScriptSerializer().Serialize( ((Dictionary<string, object>)dict).ToDictionary((KeyValuePair<string, object> item) => item.Key.ToString(), (KeyValuePair<string, object> item) => item.Value.ToString()));
+			return new JavaScriptSerializer().Serialize(((Dictionary<string, object>)dict).ToDictionary((KeyValuePair<string, object> item) => item.Key.ToString(), (KeyValuePair<string, object> item) => item.Value.ToString()));
 		}
- 
+
 		public static string dictToString(object obj)
 		{
-			return string.Join("; ", (obj as Dictionary<object,object>).Select(x => x.Key.ToString() + "=" + x.Value.ToString()).ToArray());
+			return string.Join("; ", (obj as Dictionary<object, object>).Select(x => x.Key.ToString() + "=" + x.Value.ToString()).ToArray());
 		}
-		
 
-            //return ( NetFrameworkVersion() <= 3.5 ?  deserializer_35(str)  : deserializer(str) );
+
+		//return ( NetFrameworkVersion() <= 3.5 ?  deserializer_35(str)  : deserializer(str) );
 		public static Dictionary<string, string> deserialize(string str)
 		{
 			return deserializer_35(str);
 		}
- 
+
 		public static bool deserialize(string str, ref Dictionary<string, string> dict)
 		{
 			Dictionary<string, string> dictionary = deserializer_35(str);
@@ -745,7 +770,7 @@ namespace PuvoxLibrary
 			}
 			return false;
 		}
- 
+
 		public static Dictionary<string, string> deserializer_35(string str)
 		{
 			Dictionary<string, string> result;
@@ -758,13 +783,13 @@ namespace PuvoxLibrary
 				result = null;
 			}
 			return result;
-            //Dictionary<string, string> new_dict = new Dictionary<string, string>();
-            //foreach (KeyValuePair<string, object> eachObj in dict)
-            // new_dict[eachObj.Key] = eachObj.Value.ToString();
-            //return new_dict;
+			//Dictionary<string, string> new_dict = new Dictionary<string, string>();
+			//foreach (KeyValuePair<string, object> eachObj in dict)
+			// new_dict[eachObj.Key] = eachObj.Value.ToString();
+			//return new_dict;
 		}
 
-		
+
 		public static Dictionary<string, string> ConvertToStringDictionary(Dictionary<string, object> dicti)
 		{
 			Dictionary<string, string> result;
@@ -779,54 +804,48 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
-		public string getDictionaryKeyByValue(Dictionary<string, string> dict, string value)
+
+		public static string getDictionaryKeyByValue(Dictionary<string, string> dict, string value)
 		{
 			return dict.FirstOrDefault((KeyValuePair<string, string> x) => x.Value == value).Key;
 		}
 
-		
-		
-   		public Dictionary<string, string> xml_to_dictionary(string xml_data)
-        {
 
-            //xml_data = "<data><test>foo</test><test>foobbbbb</test><bar>123</bar><username>foobar</username></data>";
 
-            XDocument doc = XDocument.Parse(xml_data);
-            Dictionary<string, string> dataDictionary = new Dictionary<string, string>();
+		public static Dictionary<string, string> xml_to_dictionary(string xml_data)
+		{
 
-            foreach (XElement element in doc.Descendants().Where(p => p.HasElements == false))
-            {
-                int keyInt = 0;
-                string keyName = element.Name.LocalName;
+			//xml_data = "<data><test>foo</test><test>foobbbbb</test><bar>123</bar><username>foobar</username></data>";
 
-                while (dataDictionary.ContainsKey(keyName))
-                {
-                    keyName = element.Name.LocalName + "_" + keyInt++;
-                }
+			XDocument doc = XDocument.Parse(xml_data);
+			Dictionary<string, string> dataDictionary = new Dictionary<string, string>();
 
-                dataDictionary.Add(keyName, element.Value);
-            }
-            return dataDictionary;
-        }
+			foreach (XElement element in doc.Descendants().Where(p => p.HasElements == false))
+			{
+				int keyInt = 0;
+				string keyName = element.Name.LocalName;
+
+				while (dataDictionary.ContainsKey(keyName))
+				{
+					keyName = element.Name.LocalName + "_" + keyInt++;
+				}
+
+				dataDictionary.Add(keyName, element.Value);
+			}
+			return dataDictionary;
+		}
 
 		#endregion
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+
+
+
+
+
+
+
 
 		#region Registry
-		public static RegistryHive chosenRegHive = RegistryHive.CurrentUser;  	//NT 8 Cannot implicitly convert type 'Microsoft.Win32.RegistryKey' to 'Microsoft.Win32.RegistryHive'	
+		public static RegistryHive chosenRegHive = RegistryHive.CurrentUser;    //NT 8 Cannot implicitly convert type 'Microsoft.Win32.RegistryKey' to 'Microsoft.Win32.RegistryHive'	
 
 		public static RegistryKey chosenRegKey = Registry.CurrentUser;
 
@@ -839,8 +858,8 @@ namespace PuvoxLibrary
 			return RegistryKey.OpenBaseKey(rh, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32);
 		}
 
-		public static bool is64BitOS =  Environment.Is64BitOperatingSystem;
-		
+		public static bool is64BitOS = Environment.Is64BitOperatingSystem;
+
 
 		public static void Read64bitRegistryFrom32bitApp(string[] args)
 		{
@@ -860,10 +879,10 @@ namespace PuvoxLibrary
 				value32 = localKey32.GetValue("RegisteredOrganization").ToString();
 			}
 		}
-		
-		
+
+
 		public static Dictionary<string, string> myregs = new Dictionary<string, string>();
-		
+
 		public static string regPartFromKey(string key, int partN)
 		{
 			if (partN == 1)
@@ -888,19 +907,19 @@ namespace PuvoxLibrary
 			}
 		}
 
-		
+
 		public static bool existsRegistryValue(string key)
 		{
 			return getRegistryValue(key) != null;
 		}
 
-		
+
 		public static bool existsRegistryValue(string path, string key)
 		{
 			return getRegistryValue(path + key) != null;
 		}
 
-		
+
 		public static string getRegistryValue(string key)
 		{
 			return getRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2));
@@ -951,7 +970,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static string getRegistryValue(string key, string defaultVal, bool nothing)
 		{
 			string registryValue = getRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2));
@@ -963,13 +982,13 @@ namespace PuvoxLibrary
 			return registryValue;
 		}
 
-		
+
 		public static void setRegistryValue(string key, string value)
 		{
 			setRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2), value);
 		}
 
-		
+
 		public static bool setRegistryValue(string path, string key, string value)
 		{
 			bool result;
@@ -1000,13 +1019,13 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static string getSetRegistryValue(string key, string value)
 		{
 			return getSetRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2), value);
 		}
 
-		
+
 		public static string getSetRegistryValue(string path, string key, string value)
 		{
 			string result;
@@ -1038,8 +1057,8 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
- 
+
+
 		// c3.5
 		public static string Read(string subKey, string KeyName)
 		{
@@ -1064,7 +1083,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static bool Write(string subKey, string KeyName, object Value)
 		{
 			bool result;
@@ -1083,7 +1102,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static bool DeleteKey(string subKey, string KeyName)
 		{
 			bool result;
@@ -1109,7 +1128,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static bool DeleteSubKeyTree(string subKey)
 		{
 			bool result;
@@ -1131,7 +1150,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static int SubKeyCount(string subKey)
 		{
 			int result;
@@ -1149,7 +1168,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static int ValueCount(string subKey)
 		{
 			int result;
@@ -1167,7 +1186,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static Dictionary<string, string> RegistryValuesInFolder(string keyroot)
 		{
 			Dictionary<string, string> result;
@@ -1191,7 +1210,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static bool FirstTimeAction(string regKey)
 		{
 			if (getRegistryValue("triggered_" + regKey) != "y")
@@ -1202,7 +1221,7 @@ namespace PuvoxLibrary
 			return false;
 		}
 
-		
+
 		public static bool TimeGone(string Key, int minutes)
 		{
 			string registryValue = getRegistryValue("timegone_" + Key);
@@ -1216,26 +1235,26 @@ namespace PuvoxLibrary
 		#endregion
 
 
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+
+
+
+
+
+
+
+
+
+
+		/* doesnt work in C#4.5 native projects
 		#region Color region Brushes
-		public System.Windows.Media.Color ChangeColorBrightness(System.Windows.Media.Color color, string correctionFactor)
+		public static System.Windows.Media.Color ChangeColorBrightness(System.Windows.Media.Color color, string correctionFactor)
 		{
 			if (!(correctionFactor == "dark")) correctionFactor = "light"; 
 			return ChangeColorBrightness(color, correctionFactor);
 		}
 		
 
-        public System.Windows.Media.Color ChangeColorBrightness(System.Windows.Media.Color color, float correctionFactor)
+        public static System.Windows.Media.Color ChangeColorBrightness(System.Windows.Media.Color color, float correctionFactor)
         {
             float red = (float)color.R;
             float green = (float)color.G;
@@ -1259,7 +1278,7 @@ namespace PuvoxLibrary
         }
 
 		
-		public System.Windows.Media.Color color_from_hex(String hex)
+		public static System.Windows.Media.Color color_from_hex(String hex)
 	    {
 	        //remove the # at the front
 	        hex = hex.Replace("#", "");
@@ -1287,7 +1306,7 @@ namespace PuvoxLibrary
 	    }
     
 		#endregion
-
+		*/
 
 
 
@@ -1297,8 +1316,8 @@ namespace PuvoxLibrary
 
 
 		#region String manipulations
-		
-		
+
+
 		public static string lastPart(string path)
 		{
 			if (path.Contains("\\"))
@@ -1314,7 +1333,7 @@ namespace PuvoxLibrary
 			}).Last<string>();
 		}
 
-		
+
 		public static int charsInPhrase(string source, string char_)
 		{
 			int num = 0;
@@ -1327,7 +1346,7 @@ namespace PuvoxLibrary
 			}
 			return num;
 		}
-		
+
 		public static string sanitizer(string dirtyString)
 		{
 			string a = "replace";
@@ -1368,7 +1387,7 @@ namespace PuvoxLibrary
 		public static bool stringInArrayStart(string str, object array)
 		{
 			bool result = false;
-			foreach (object obj in (IList)array ) if ( str.StartsWith(obj.ToString()) ) result = true;  
+			foreach (object obj in (IList)array) if (str.StartsWith(obj.ToString())) result = true;
 			return result;
 		}
 
@@ -1392,7 +1411,7 @@ namespace PuvoxLibrary
 			return Uri.EscapeDataString(msg); //.Replace("%20", "+");
 		}
 
-		public int countWords(string str)
+		public static int countWords(string str)
 		{
 			char[] separator = new char[] { ' ', '\r', '\n' };
 			return str.Split(separator, StringSplitOptions.RemoveEmptyEntries).Length;
@@ -1403,7 +1422,7 @@ namespace PuvoxLibrary
 			return new StringBuilder().Insert(0, str, level).ToString();
 		}
 
-		
+
 		public static string pChars(string txt)
 		{
 			int num = Math.Max(1, 25 - txt.Length);
@@ -1414,7 +1433,7 @@ namespace PuvoxLibrary
 			}
 			return text;
 		}
-		
+
 		public static string textLengthen(string txt, int char_count, string letter)
 		{
 			while (txt.Length < char_count)
@@ -1424,7 +1443,7 @@ namespace PuvoxLibrary
 			return txt;
 		}
 
-		
+
 		public static string SplitToLines(string text, char[] splitOnCharacters, int maxStringLength)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
@@ -1442,50 +1461,50 @@ namespace PuvoxLibrary
 			}
 			return stringBuilder.ToString();
 		}
- 
-        public static string RandomString(int length)
-        {
 
-            //Char[] pwdChars = new Char[62] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-            //string sometext = "";
-            //string SiteURL = String.Format("http://www.test444.dreamhosters.com/tdprot/my_protector.php?id={0}&value={1}", sometext, sometext);
-            //Random rand = new Random();
-            //for (int i = 0; i < 20; i++)
-            //    sometext += pwdChars[rand.Next(0, 62)];
+		public static string RandomString(int length)
+		{
 
-            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            var stringChars = new char[length];
-            var random = new Random();
-            for (int i = 0; i < stringChars.Length; i++) { stringChars[i] = chars[random.Next(chars.Length)]; }
-            var finalString = new String(stringChars);
-            return finalString;
-        }
+			//Char[] pwdChars = new Char[62] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+			//string sometext = "";
+			//string SiteURL = String.Format("http://www.test444.dreamhosters.com/tdprot/my_protector.php?id={0}&value={1}", sometext, sometext);
+			//Random rand = new Random();
+			//for (int i = 0; i < 20; i++)
+			//    sometext += pwdChars[rand.Next(0, 62)];
 
-		
+			var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+			var stringChars = new char[length];
+			var random = new Random();
+			for (int i = 0; i < stringChars.Length; i++) { stringChars[i] = chars[random.Next(chars.Length)]; }
+			var finalString = new String(stringChars);
+			return finalString;
+		}
+
+
 
 		public static string DateToSeconds(DateTime date)
 		{
 			return date.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
-		} 
-		
+		}
+
 		public static string convertBackSlashes(string path)
 		{
 			return path.Replace("/", "\\");
 		}
 
-		public string regexReplace(string input, string pattern, string with)
+		public static string regexReplace(string input, string pattern, string with)
 		{
 			return new Regex(pattern).Replace(input, "");
 		}
 
-		
-		public string SanitizeSymbol(string s)
+
+		public static string SanitizeSymbol(string s)
 		{
 			return s.Replace("/", "_").Replace("\\", "_").Replace("|", "_").Replace("*", "_").ToUpper();
 		}
 
-		
-		public string NotNull(string smth)
+
+		public static string NotNull(string smth)
 		{
 			if (!string.IsNullOrEmpty(smth))
 			{
@@ -1494,10 +1513,10 @@ namespace PuvoxLibrary
 			return "";
 		}
 
-		
+
 		public static bool empty(string text)
 		{
-			return text == null || text.Trim().Length == 0 || text.Trim() == ""; 
+			return text == null || text.Trim().Length == 0 || text.Trim() == "";
 		}
 
 
@@ -1510,7 +1529,7 @@ namespace PuvoxLibrary
 		{
 			return new StringBuilder(value.Length * count).Insert(0, value, count).ToString();
 		}
-		
+
 		public static string[] file_to_lines(string file_location)
 		{
 			string[] result = new string[0];
@@ -1537,7 +1556,7 @@ namespace PuvoxLibrary
 			foreach (string text3 in array)
 			{
 				num++;
-				string[] array3 = text3.Split(new string[]{}, StringSplitOptions.RemoveEmptyEntries);
+				string[] array3 = text3.Split(new string[] { }, StringSplitOptions.RemoveEmptyEntries);
 				int num2 = 0;
 				foreach (string str in array3)
 				{
@@ -1559,92 +1578,92 @@ namespace PuvoxLibrary
 			}
 			return text2;
 		}
-		
-		  
-		
-			#region Encrypt/Decrypt
+
+
+
+		#region Encrypt/Decrypt
 		// encryption 
-        public static string EncryptString(string plainText, string password)
-        {
-            try
-            {
-                SHA256 mySHA256 = SHA256Managed.Create();
-                byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(password));
-                byte[] iv = new byte[16] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
-                // string symmetric encryption
-                Aes encryptor = Aes.Create();
-                encryptor.Mode = CipherMode.CBC;
-                //encryptor.KeySize = 256;    encryptor.BlockSize = 128;   encryptor.Padding = PaddingMode.Zeros;
-                encryptor.Key = key;
-                encryptor.IV = iv;
+		public static string EncryptString(string plainText, string password)
+		{
+			try
+			{
+				SHA256 mySHA256 = SHA256Managed.Create();
+				byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(password));
+				byte[] iv = new byte[16] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+				// string symmetric encryption
+				Aes encryptor = Aes.Create();
+				encryptor.Mode = CipherMode.CBC;
+				//encryptor.KeySize = 256;    encryptor.BlockSize = 128;   encryptor.Padding = PaddingMode.Zeros;
+				encryptor.Key = key;
+				encryptor.IV = iv;
 
-                MemoryStream memoryStream = new MemoryStream();
-                ICryptoTransform aesEncryptor = encryptor.CreateEncryptor();
-                CryptoStream cryptoStream = new CryptoStream(memoryStream, aesEncryptor, CryptoStreamMode.Write); // write to memory stream
-                byte[] plainBytes = Encoding.ASCII.GetBytes(plainText); // Convert the plainText string into a byte array
-                cryptoStream.Write(plainBytes, 0, plainBytes.Length);   // Encrypt the input plaintext string
-                cryptoStream.FlushFinalBlock();                         // Complete the encryption process
-                byte[] cipherBytes = memoryStream.ToArray();            // Convert the encrypted data from a MemoryStream to a byte array
+				MemoryStream memoryStream = new MemoryStream();
+				ICryptoTransform aesEncryptor = encryptor.CreateEncryptor();
+				CryptoStream cryptoStream = new CryptoStream(memoryStream, aesEncryptor, CryptoStreamMode.Write); // write to memory stream
+				byte[] plainBytes = Encoding.ASCII.GetBytes(plainText); // Convert the plainText string into a byte array
+				cryptoStream.Write(plainBytes, 0, plainBytes.Length);   // Encrypt the input plaintext string
+				cryptoStream.FlushFinalBlock();                         // Complete the encryption process
+				byte[] cipherBytes = memoryStream.ToArray();            // Convert the encrypted data from a MemoryStream to a byte array
 
-                memoryStream.Close();
-                cryptoStream.Close();
-                string cipherText = Convert.ToBase64String(cipherBytes, 0, cipherBytes.Length);  // Convert the encrypted byte array to a base64 encoded string
+				memoryStream.Close();
+				cryptoStream.Close();
+				string cipherText = Convert.ToBase64String(cipherBytes, 0, cipherBytes.Length);  // Convert the encrypted byte array to a base64 encoded string
 
-                return cipherText;
-            }
-            catch (Exception e)
-            { 
-                return "";
-            }
-        }
+				return cipherText;
+			}
+			catch (Exception e)
+			{
+				return e.Message;
+			}
+		}
 
 
-        public static string DecryptString(string cipherText, string password)
-        {
-            try
-            { 
-                SHA256 mySHA256 = SHA256Managed.Create();
-                byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(password));
-                byte[] iv = new byte[16] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
-                // Instantiate a new Aes object to perform string symmetric encryption
-                Aes encryptor = Aes.Create();
-                encryptor.Mode = CipherMode.CBC;
-                //encryptor.KeySize = 256;  encryptor.BlockSize = 128;  encryptor.Padding = PaddingMode.Zeros;
-                encryptor.Key = key;
-                encryptor.IV = iv;
+		public static string DecryptString(string cipherText, string password)
+		{
+			try
+			{
+				SHA256 mySHA256 = SHA256Managed.Create();
+				byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(password));
+				byte[] iv = new byte[16] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+				// Instantiate a new Aes object to perform string symmetric encryption
+				Aes encryptor = Aes.Create();
+				encryptor.Mode = CipherMode.CBC;
+				//encryptor.KeySize = 256;  encryptor.BlockSize = 128;  encryptor.Padding = PaddingMode.Zeros;
+				encryptor.Key = key;
+				encryptor.IV = iv;
 
-                MemoryStream memoryStream = new MemoryStream();
-                ICryptoTransform aesDecryptor = encryptor.CreateDecryptor();
-                CryptoStream cryptoStream = new CryptoStream(memoryStream, aesDecryptor, CryptoStreamMode.Write);  //write it to  memory stream
-                string plainText = String.Empty;
-                try
-                {
-                    byte[] cipherBytes = Convert.FromBase64String(cipherText);  // Convert the ciphertext string into a byte array
-                    cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);      // Decrypt the input ciphertext string
-                    cryptoStream.FlushFinalBlock();              // Complete the decryption process
-                    byte[] plainBytes = memoryStream.ToArray(); // Convert the decrypted data from a MemoryStream to a byte array
-                    plainText = Encoding.ASCII.GetString(plainBytes, 0, plainBytes.Length); // Convert the decrypted byte array to string
-                }
-                catch (Exception e) { System.Windows.Forms.MessageBox.Show("Problem in encryption. ErrorCode 274"); }
-                finally
-                {
-                    memoryStream.Close();
-                    cryptoStream.Close();
-                }
-                return plainText;
-            }
-            catch (Exception e)
-            { 
-                return "";
-            }
-        }
-			#endregion
-			
-		             //if (isDevelopment)  Console.OutputEncoding = Encoding.UTF8;   
-		
-			#region Base64 md5
-			
-		public string md5(string input)
+				MemoryStream memoryStream = new MemoryStream();
+				ICryptoTransform aesDecryptor = encryptor.CreateDecryptor();
+				CryptoStream cryptoStream = new CryptoStream(memoryStream, aesDecryptor, CryptoStreamMode.Write);  //write it to  memory stream
+				string plainText = String.Empty;
+				try
+				{
+					byte[] cipherBytes = Convert.FromBase64String(cipherText);  // Convert the ciphertext string into a byte array
+					cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);      // Decrypt the input ciphertext string
+					cryptoStream.FlushFinalBlock();              // Complete the decryption process
+					byte[] plainBytes = memoryStream.ToArray(); // Convert the decrypted data from a MemoryStream to a byte array
+					plainText = Encoding.ASCII.GetString(plainBytes, 0, plainBytes.Length); // Convert the decrypted byte array to string
+				}
+				catch (Exception e) { System.Windows.Forms.MessageBox.Show("Problem in encryption. ErrorCode 274. " + e.Message); }
+				finally
+				{
+					memoryStream.Close();
+					cryptoStream.Close();
+				}
+				return plainText;
+			}
+			catch (Exception e)
+			{
+				return e.Message;
+			}
+		}
+		#endregion
+
+		//if (isDevelopment)  Console.OutputEncoding = Encoding.UTF8;   
+
+		#region Base64 md5
+
+		public static string md5(string input)
 		{
 			string result;
 			try
@@ -1668,7 +1687,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		public string Base64Decode(string str)
+		public static string Base64Decode(string str)
 		{
 			string result;
 			try
@@ -1684,8 +1703,8 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
-		public string Base64Encode(string toEncode)
+
+		public static string Base64Encode(string toEncode)
 		{
 			string result;
 			try
@@ -1701,33 +1720,33 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
-		public string decode64(string str)
+
+		public static string decode64(string str)
 		{
 			byte[] bytes = Convert.FromBase64String(str);
 			return Encoding.UTF8.GetString(bytes);
 		}
 
-		
-			#endregion
-			
-		#endregion
-		
-		
-		
-        private static object fileCheckObj = new object(); 
-        public static string errorLogFile = Environment.GetEnvironmentVariable("tmp") + @"\_errorlogs_c#.log";
- 
-        public static void Dispose(IDisposable resource) { if (resource != null) resource.Dispose(); }
 
-		 
-		
+		#endregion
+
+		#endregion
+
+
+
+		private static object fileCheckObj = new object();
+		public static string errorLogFile = Environment.GetEnvironmentVariable("tmp") + @"\_errorlogs_c#.log";
+
+		public static void Dispose(IDisposable resource) { if (resource != null) resource.Dispose(); }
+
+
+
 		#region Control region Form manipulations
-		
+
 		private delegate void SetTextCallback(Form f, System.Windows.Forms.Control ctrl, string text);
 
 		private delegate bool Control_SetDelegate(System.Windows.Forms.Control ctrl, string what, object value);
-		
+
 		public static void PopupMessage(object obj_)
 		{
 			Form form = new Form();
@@ -1747,11 +1766,11 @@ namespace PuvoxLibrary
 			form.ShowDialog();
 		}
 
-		public string ShowDialog(string text)
+		public static string ShowDialog(string text)
 		{
 			return ShowDialog(text, "", "");
 		}
-		public string ShowDialog(string text, string caption, string defaultValue)
+		public static string ShowDialog(string text, string caption, string defaultValue)
 		{
 			string result;
 			try
@@ -1785,7 +1804,7 @@ namespace PuvoxLibrary
 					Top = 70,
 					DialogResult = DialogResult.OK
 				};
-				button.Click += delegate(object sender, EventArgs e)
+				button.Click += delegate (object sender, EventArgs e)
 				{
 					prompt.Close();
 				};
@@ -1803,10 +1822,10 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
-		
-		
-		public string GetControlText(Form obj, string which)
+
+
+
+		public static string GetControlText(Form obj, string which)
 		{
 			System.Windows.Forms.Control[] array = obj.Controls.Find(which, true);
 			if (array.Length <= 0)
@@ -1817,7 +1836,7 @@ namespace PuvoxLibrary
 		}
 
 
-		public void CenterLabel(System.Windows.Forms.Control ctrl)
+		public static void CenterLabel(System.Windows.Forms.Control ctrl)
 		{
 			try
 			{
@@ -1835,16 +1854,16 @@ namespace PuvoxLibrary
 			}
 		}
 
-		
-		public bool isUserInput(System.Windows.Forms.Control ct)
+
+		public static bool isUserInput(System.Windows.Forms.Control ct)
 		{
 			return ct is System.Windows.Forms.TextBox || ct is System.Windows.Forms.ComboBox || ct is System.Windows.Forms.CheckBox || ct is CheckedListBox || ct is DateTimePicker || ct is System.Windows.Forms.GroupBox || ct is System.Windows.Forms.ListBox || ct is MonthCalendar || ct is System.Windows.Forms.RadioButton || ct is System.Windows.Forms.RichTextBox || ct is TrackBar;
 		}
 
-		
-		public string optionsPrefix = "formoption_"; 
-		
-		public bool fillFormOptions(System.Windows.Forms.Control.ControlCollection cts)
+
+		public static string optionsPrefix = "formoption_";
+
+		public static bool fillFormOptions(System.Windows.Forms.Control.ControlCollection cts)
 		{
 			foreach (object obj in cts)
 			{
@@ -1866,8 +1885,8 @@ namespace PuvoxLibrary
 			return true;
 		}
 
-		
-		public bool saveFormOptions(System.Windows.Forms.Control.ControlCollection cts)
+
+		public static bool saveFormOptions(System.Windows.Forms.Control.ControlCollection cts)
 		{
 			foreach (object obj in cts)
 			{
@@ -1889,21 +1908,21 @@ namespace PuvoxLibrary
 			return true;
 		}
 
-		
-		public void SetComboboxByKey(System.Windows.Forms.ComboBox cb1, string key)
+
+		public static void SetComboboxByKey(System.Windows.Forms.ComboBox cb1, string key)
 		{
 			cb1.SelectedIndex = getIndexByKey(objToDict(cb1.Items), key);
 		}
 
-	
 
-		public void FillCombobox(System.Windows.Forms.ComboBox cb1, Dictionary<string, string> dict)
+
+		public static void FillCombobox(System.Windows.Forms.ComboBox cb1, Dictionary<string, string> dict)
 		{
 			FillCombobox(cb1, dict, false, "");
 		}
 
-		
-		public void FillCombobox(System.Windows.Forms.ComboBox cb1, Dictionary<string, string> dict, bool sort, string SelectedValue)
+
+		public static void FillCombobox(System.Windows.Forms.ComboBox cb1, Dictionary<string, string> dict, bool sort, string SelectedValue)
 		{
 			cb1.DataSource = new BindingSource(sort ? SortDict(dict) : dict, null);
 			cb1.DisplayMember = "Value";
@@ -1914,8 +1933,8 @@ namespace PuvoxLibrary
 			}
 		}
 
-        // compare the thread ID of the calling thread to the thread ID of the creating thread.
-		public void invokeSafe(System.Windows.Forms.Control uiElement, Action updater, bool forceSynchronous)
+		// compare the thread ID of the calling thread to the thread ID of the creating thread.
+		public static void invokeSafe(System.Windows.Forms.Control uiElement, Action updater, bool forceSynchronous)
 		{
 			try
 			{
@@ -1925,14 +1944,14 @@ namespace PuvoxLibrary
 					{
 						if (forceSynchronous)
 						{
-							uiElement.Invoke(new Action(delegate()
+							uiElement.Invoke(new Action(delegate ()
 							{
 								invokeSafe(uiElement, updater, forceSynchronous);
 							}));
 						}
 						else
 						{
-							uiElement.BeginInvoke(new Action(delegate()
+							uiElement.BeginInvoke(new Action(delegate ()
 							{
 								invokeSafe(uiElement, updater, forceSynchronous);
 							}));
@@ -1950,7 +1969,7 @@ namespace PuvoxLibrary
 		}
 
 
-		public bool Control_Set(System.Windows.Forms.Control ctrl, string what, object value)
+		public static bool Control_Set(System.Windows.Forms.Control ctrl, string what, object value)
 		{
 			bool result;
 			try
@@ -1992,8 +2011,8 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-		
-		public bool closeForm(Form frm)
+
+		public static bool closeForm(Form frm)
 		{
 			bool result;
 			try
@@ -2006,7 +2025,7 @@ namespace PuvoxLibrary
 				{
 					if (frm.IsHandleCreated)
 					{
-						frm.Invoke(new MethodInvoker(delegate()
+						frm.Invoke(new MethodInvoker(delegate ()
 						{
 							frm.Close();
 						}));
@@ -2025,8 +2044,8 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
-		public void SetControlText(Form obj, string which, string txt)
+
+		public static void SetControlText(Form obj, string which, string txt)
 		{
 			try
 			{
@@ -2034,7 +2053,7 @@ namespace PuvoxLibrary
 				{
 					if (obj.InvokeRequired)
 					{
-						obj.Invoke(new Action(delegate()
+						obj.Invoke(new Action(delegate ()
 						{
 							SetControlText(obj, which, txt);  //new Action<string>(SetControlText), new object[] { which, txt }
 						}));
@@ -2054,16 +2073,16 @@ namespace PuvoxLibrary
 			}
 
 
-            //  final_str = txt.ToString();
-            //  var propInfo = GetType().GetProperty(which);
-            //   if (propInfo != null)
-            //  {
-            //      propInfo.SetValue(this, txt, null);
-            //  }
-            //  textBox1.Invoke(new System.Action(() =>   {    textBox1.Text = txt.ToString();    }));
+			//  final_str = txt.ToString();
+			//  var propInfo = GetType().GetProperty(which);
+			//   if (propInfo != null)
+			//  {
+			//      propInfo.SetValue(this, txt, null);
+			//  }
+			//  textBox1.Invoke(new System.Action(() =>   {    textBox1.Text = txt.ToString();    }));
 		}
 
-		public void SetTextControl(Form form, System.Windows.Forms.Control ctrl, string text)
+		public static void SetTextControl(Form form, System.Windows.Forms.Control ctrl, string text)
 		{
 			try
 			{
@@ -2090,18 +2109,18 @@ namespace PuvoxLibrary
 			}
 		}
 		#endregion
-		
-		
-		
-		
-		
-		
-		
-		
-		
-	
+
+
+
+
+
+
+
+
+
+
 		#region Timer 
-		
+
 		// method 1:
 		public TimerInterrupter SetInterval(int interval, Action function)
 		{
@@ -2112,63 +2131,63 @@ namespace PuvoxLibrary
 		{
 			return StartTimer(interval, function, false);
 		}
-			
-			public class TimerInterrupter
-			{
-				public TimerInterrupter(System.Timers.Timer timer)
-				{
-					if (timer == null)
-					{
-						throw new ArgumentNullException("timer");
-					}
-					_timer = timer;
-				}
 
-				
-				public void Stop()
-				{
-					_timer.Stop();
-				}
-
-				
-				private readonly System.Timers.Timer _timer;
-			}
-			
-			private TimerInterrupter StartTimer(int interval, Action function, bool autoReset)
+		public class TimerInterrupter
+		{
+			public TimerInterrupter(System.Timers.Timer timer)
 			{
-				TimerInterrupter result;
-				try
+				if (timer == null)
 				{
-					Action functionCopy = (Action)function.Clone();
-					System.Timers.Timer timer = new System.Timers.Timer
-					{
-						Interval = (double)interval,
-						AutoReset = autoReset
-					};
-					timer.Elapsed += delegate(object sender, ElapsedEventArgs e)
-					{
-						functionCopy();
-					};
-					timer.Start();
-					result = new TimerInterrupter(timer);
+					throw new ArgumentNullException("timer");
 				}
-				catch (Exception)
-				{
-					result = null;
-				}
-				return result;
+				_timer = timer;
 			}
-			
-			
+
+
+			public void Stop()
+			{
+				_timer.Stop();
+			}
+
+
+			private readonly System.Timers.Timer _timer;
+		}
+
+		private TimerInterrupter StartTimer(int interval, Action function, bool autoReset)
+		{
+			TimerInterrupter result;
+			try
+			{
+				Action functionCopy = (Action)function.Clone();
+				System.Timers.Timer timer = new System.Timers.Timer
+				{
+					Interval = (double)interval,
+					AutoReset = autoReset
+				};
+				timer.Elapsed += delegate (object sender, ElapsedEventArgs e)
+				{
+					functionCopy();
+				};
+				timer.Start();
+				result = new TimerInterrupter(timer);
+			}
+			catch (Exception)
+			{
+				result = null;
+			}
+			return result;
+		}
+
+
 		// method 2:
 		private HashSet<System.Threading.Timer> ExecuteAfter_timers = new HashSet<System.Threading.Timer>();
-		
+
 		public void ExecuteAfter(int milliseconds, Action action)
 		{
 			try
 			{
 				System.Threading.Timer timer = null;
-				timer = new System.Threading.Timer(delegate(object s)
+				timer = new System.Threading.Timer(delegate (object s)
 				{
 					action();
 					timer.Dispose();
@@ -2186,7 +2205,7 @@ namespace PuvoxLibrary
 			{
 			}
 		}
-		
+
 		public static void Timer(Action<object, ElapsedEventArgs> myMethod, int interval, bool autoreset)
 		{
 			System.Timers.Timer timer = new System.Timers.Timer();
@@ -2195,26 +2214,30 @@ namespace PuvoxLibrary
 			timer.AutoReset = autoreset;
 			timer.Start();
 		}
-        // Standalone:
-        // System.Threading.Tasks.Task.Delay(3000).ContinueWith(t => init());
-        //                     or  
-        // ExecuteAfter(() => MessageBox.Show("hi"), 1000 ); 
-        // SetTimeout(1000,   () => { MessageBox.Show("hi");  }   );
+		// Standalone:
+		// System.Threading.Tasks.Task.Delay(3000).ContinueWith(t => init());
+		//                     or  
+		// ExecuteAfter(() => MessageBox.Show("hi"), 1000 ); 
+		// SetTimeout(1000,   () => { MessageBox.Show("hi");  }   );
 		#endregion
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		#region Reflection Manipulation
-		public List<string> PropertyInfoToList(PropertyInfo[] PropList)
+		public static List<string> PropertyInfoToList(PropertyInfo[] PropList)
 		{
 			List<string> list = new List<string>();
 			foreach (PropertyInfo propertyInfo in PropList)
@@ -2224,26 +2247,26 @@ namespace PuvoxLibrary
 			return list;
 		}
 
-		public List<string> ObjectPropertyNames(object Obj)
+		public static List<string> ObjectPropertyNames(object Obj)
 		{
 			return PropertyInfoToList(Obj.GetType().GetProperties());
 		}
 
-		
-		public bool MethodExists(object objectToCheck, string methodName)
+
+		public static bool MethodExists(object objectToCheck, string methodName)
 		{
 			return objectToCheck.GetType().GetMethod(methodName) != null;
 		}
 
-		
-		public string Trace(Exception ex)
+
+		public static string Trace(Exception ex)
 		{
 			StackTrace stackTrace = new StackTrace(ex, true);
 			StackFrame frame = stackTrace.GetFrame(0);
 			return frame.GetFileLineNumber().ToString();
 		}
 		#endregion
-		
+
 
 
 
@@ -2255,34 +2278,34 @@ namespace PuvoxLibrary
 
 
 		#region Url Site actions
-		
-        public static string urlRead(string url)
-        {
-            string responseText = "-1";
-            try
-            {
-                // HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-                // //req.AutomaticDecompression = DecompressionMethods.GZip;
-                // using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
-                // using (StreamReader reader = new StreamReader(res.GetResponseStream(), ASCIIEncoding.ASCII))
-                // responseText = reader.ReadToEnd(); 
-                using (WebClient wc = new WebClient())
-                {
-                    wc.Encoding = Encoding.UTF8;
-                    //  new StreamReader(wc.OpenRead("http://your_website.com"));
-                    responseText = wc.DownloadString(url);
-                }
-            }
-            catch (Exception e) {   return ("Error:" + e.ToString()); }
-            return responseText;
-        }
-       
-				// wb.DocumentCompleted += wb_DocumentCompleted;
-				//  private void wb_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
-				//  {
-				//      WebBrowser wb = sender as WebBrowser;
-				//  }
-		public bool downloadFile(string url, string location)
+
+		public static string urlRead(string url)
+		{
+			string responseText = "-1";
+			try
+			{
+				// HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+				// //req.AutomaticDecompression = DecompressionMethods.GZip;
+				// using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
+				// using (StreamReader reader = new StreamReader(res.GetResponseStream(), ASCIIEncoding.ASCII))
+				// responseText = reader.ReadToEnd(); 
+				using (WebClient wc = new WebClient())
+				{
+					wc.Encoding = Encoding.UTF8;
+					//  new StreamReader(wc.OpenRead("http://your_website.com"));
+					responseText = wc.DownloadString(url);
+				}
+			}
+			catch (Exception e) { return ("Error:" + e.ToString()); }
+			return responseText;
+		}
+
+		// wb.DocumentCompleted += wb_DocumentCompleted;
+		//  private void wb_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+		//  {
+		//      WebBrowser wb = sender as WebBrowser;
+		//  }
+		public static bool downloadFile(string url, string location)
 		{
 			bool result;
 			try
@@ -2299,8 +2322,9 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-		
-		
+
+
+
 		public class WebDownload : WebClient
 		{
 			public int Timeout { get; set; }
@@ -2331,11 +2355,10 @@ namespace PuvoxLibrary
 			}
 		}
 
-		
-        //(System.IO.File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/debug.txt"))
- 
+		//(System.IO.File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/debug.txt"))
 
-		public string urlPost(string url)
+
+		public static string urlPost(string url)
 		{
 			string result;
 			try
@@ -2364,7 +2387,7 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-		
+
 		public static string tempFilePathForUrlContent(string url)
 		{
 			Uri uri = new Uri(url);
@@ -2380,7 +2403,7 @@ namespace PuvoxLibrary
 			}
 			return text;
 		}
-		
+
 		public static void urlOpen(string url)
 		{
 			new System.Windows.Forms.WebBrowser
@@ -2394,8 +2417,8 @@ namespace PuvoxLibrary
 			try
 			{
 				using (var client = new WebClient())
-					using (client.OpenRead("http://google.com/generate_204")) 
-						return true; 
+				using (client.OpenRead("http://google.com/generate_204"))
+					return true;
 			}
 			catch (Exception ex)
 			{
@@ -2407,23 +2430,23 @@ namespace PuvoxLibrary
 			return false;
 		}
 		#endregion
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		#region File manipulations
-		
+
 		public static string withoutLastDir(string path, int HowManyLastDirs)
 		{
 			string result = path;
@@ -2437,8 +2460,8 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
-		public bool WriteFile(string fileName, string text, bool rewrite_or_add)
+
+		public static bool WriteFile(string fileName, string text, bool rewrite_or_add)
 		{
 			bool result;
 			try
@@ -2454,8 +2477,8 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-		
-		public void WriteTempFile(string fileName, string text, bool rewrite_or_add)
+
+		public static void WriteTempFile(string fileName, string text, bool rewrite_or_add)
 		{
 			string path = Environment.GetEnvironmentVariable("tmp") + "\\" + fileName + ".txt";
 			if (rewrite_or_add)
@@ -2481,8 +2504,8 @@ namespace PuvoxLibrary
 			}
 			return false;
 		}
-		
-		public string ReadFile(string path)
+
+		public static string ReadFile(string path)
 		{
 			if (File.Exists(path))
 			{
@@ -2491,7 +2514,7 @@ namespace PuvoxLibrary
 			return "";
 		}
 
-		public string readFile(string filepath)
+		public static string readFile(string filepath)
 		{
 			string result = "";
 			if (File.Exists(filepath))
@@ -2505,7 +2528,7 @@ namespace PuvoxLibrary
 		}
 
 
-		public bool createDir(string path)
+		public static bool createDir(string path)
 		{
 			bool result;
 			try
@@ -2519,7 +2542,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		public bool deleteDir(string path)
+		public static bool deleteDir(string path)
 		{
 			bool result;
 			try
@@ -2541,7 +2564,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		public void list_all_files_in_dir(string base_path)
+		public static void list_all_files_in_dir(string base_path)
 		{
 			DirectoryInfo directoryInfo = new DirectoryInfo(base_path);
 			FileInfo[] files = directoryInfo.GetFiles("*.*");
@@ -2556,14 +2579,16 @@ namespace PuvoxLibrary
 
 
 
-		
-        //Action<object,RoutedEventArgs,string>  x= (object sender, RoutedEventArgs e, string index )=>Print("foo") ;  
-        //buttons[key].Click += (sender, EventArgs) => {  x(sender, EventArgs, (string) key.ToString()+" Hiii"); };
+
+		//Action<object,RoutedEventArgs,string>  x= (object sender, RoutedEventArgs e, string index )=>Print("foo") ;  
+		//buttons[key].Click += (sender, EventArgs) => {  x(sender, EventArgs, (string) key.ToString()+" Hiii"); };
 
 
-		 
+
 		// Assign the BitmapImage as the ImageSource of the ImageBrush
 		// p.s. no need to download like : using (WebClient client = new WebClient())  { try{ 	client.DownloadFile(new Uri("http://tradeliveglobal.com/ninja/greenbutton.png"),   Path.GetTempPath()+@"greenbutton.png");
+
+		/* Doesnt work in native C#4.5 without PresentationCore.dll
 		public static System.Windows.Media.Imaging.BitmapImage SetBitmapForButton(ImageBrush imgBtn, string filePath)
 		{
 		    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
@@ -2575,34 +2600,35 @@ namespace PuvoxLibrary
 			imgBtn.Dispatcher.Invoke( () => { imgBtn.ImageSource = bitmap; } );
 		    return bitmap;
 		}
+		*/
 
-		//public string EmptyStringBreak(dynamic smth) { if(smth == null || !smth.GetType().GetProperties().Any()) { MessageBox.Show("empty value");); } }
+		//public static string EmptyStringBreak(dynamic smth) { if(smth == null || !smth.GetType().GetProperties().Any()) { MessageBox.Show("empty value");); } }
 
-        //public bool XelementIsEmpty( System.Linq.XElement smth) { if (smth == null) return true; return false; }
-
- 
-        // https://ninjatrader.com/support/helpGuides/nt8/en-us/?alert_and_debug_concepts.htm
-        //usage: ExceptionPrint(this, System.Reflection.MethodBase, e)
-        //Print( "["+GetType().Name+"]["+System.Reflection.MethodBase.GetCurrentMethod().Name+"]-[ERROR at " + mymethodstt.Trace(e) +"] "+  e.ToString());
+		//public static bool XelementIsEmpty( System.Linq.XElement smth) { if (smth == null) return true; return false; }
 
 
+		// https://ninjatrader.com/support/helpGuides/nt8/en-us/?alert_and_debug_concepts.htm
+		//usage: ExceptionPrint(this, System.Reflection.MethodBase, e)
+		//Print( "["+GetType().Name+"]["+System.Reflection.MethodBase.GetCurrentMethod().Name+"]-[ERROR at " + mymethodstt.Trace(e) +"] "+  e.ToString());
 
-		public string getDesktopPath()
+
+
+		public static string getDesktopPath()
 		{
 			return Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 		}
 
 
-		
-		
+
+
 		#region Translation/Google
-		public string getLangFromIsoLang(string isoLang)
+		public static string getLangFromIsoLang(string isoLang)
 		{
 			return new Regex("\\-(.*)", RegexOptions.IgnoreCase).Replace(isoLang, "");
 		}
 
-		
-		public void googleSetKeyFile(string FileContent)
+
+		public static void googleSetKeyFile(string FileContent)
 		{
 			string text = Environment.GetEnvironmentVariable("appdata") + "\\gsapk.xyz";
 			setRegistryValue("gsapiKeyPath", text);
@@ -2610,16 +2636,16 @@ namespace PuvoxLibrary
 			SetGoogleCredentialsDefaults(text);
 		}
 
-		
-		public void SetGoogleCredentialsDefaults(string path)
+
+		public static void SetGoogleCredentialsDefaults(string path)
 		{
 			Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", path);
 		}
 
-		
-		public string selectedLang = "en";
-		public Dictionary<string, Dictionary<string, string>> transl_texts;
-		public string translate(string txt)
+
+		public static string selectedLang = "en";
+		public static Dictionary<string, Dictionary<string, string>> transl_texts;
+		public static string translate(string txt)
 		{
 			if (transl_texts.ContainsKey(txt) && transl_texts[txt].ContainsKey(selectedLang))
 			{
@@ -2628,38 +2654,38 @@ namespace PuvoxLibrary
 			return translatedReady(selectedLang, txt);
 		}
 
-		
-        public void setTexts(Dictionary<string, string> dict, string lang_2char, Form frm)
-        {
-            foreach (KeyValuePair<string, string> v in dict)
-            {
-                string keyNm_this = "trans_" + v.Value + "_" + lang_2char;    // keyname for that element
-                string keyNm_ENG = "trans_" + v.Value + "_en";                // keyname for that element
-                string val_this = getRegistryValue(keyNm_this);              // value from registry for element 
-                string val_ENG = getRegistryValue(keyNm_ENG);              // value from registry for element 
-                if (
-                    (String.IsNullOrEmpty(val_this))                            //if empty 
-                    ||
-                    (!String.IsNullOrEmpty(val_ENG) && val_ENG != v.Key)     // or if english value differs from english stored value (happens when source was changed)
-                )
-                {
-                    if (lang_2char == "en")
-                    {
-                        val_this = v.Key;
-                    }
-                    else
-                    {
-                        val_this = GTranslate_checker(v.Key, lang_2char);
-                    }
 
-                    setRegistryValue(keyNm_this, val_this);
-                }
-                SetControlText(frm, v.Value, val_this);
-            }
-        }
+		public static void setTexts(Dictionary<string, string> dict, string lang_2char, Form frm)
+		{
+			foreach (KeyValuePair<string, string> v in dict)
+			{
+				string keyNm_this = "trans_" + v.Value + "_" + lang_2char;    // keyname for that element
+				string keyNm_ENG = "trans_" + v.Value + "_en";                // keyname for that element
+				string val_this = getRegistryValue(keyNm_this);              // value from registry for element 
+				string val_ENG = getRegistryValue(keyNm_ENG);              // value from registry for element 
+				if (
+					(String.IsNullOrEmpty(val_this))                            //if empty 
+					||
+					(!String.IsNullOrEmpty(val_ENG) && val_ENG != v.Key)     // or if english value differs from english stored value (happens when source was changed)
+				)
+				{
+					if (lang_2char == "en")
+					{
+						val_this = v.Key;
+					}
+					else
+					{
+						val_this = GTranslate_checker(v.Key, lang_2char);
+					}
 
-		
-		public string translatedReady(string targetLang, string englishValue)
+					setRegistryValue(keyNm_this, val_this);
+				}
+				SetControlText(frm, v.Value, val_this);
+			}
+		}
+
+
+		public static string translatedReady(string targetLang, string englishValue)
 		{
 			string text = englishValue;
 			string key = "translReady_" + md5(englishValue) + "_" + targetLang;
@@ -2683,8 +2709,8 @@ namespace PuvoxLibrary
 			return text;
 		}
 
-		
-		public string GTranslate_checker(string what, string lang_target)
+
+		public static string GTranslate_checker(string what, string lang_target)
 		{
 			string result;
 			if (MethodExists(this, "GTranslate_callback"))
@@ -2705,9 +2731,9 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		 
+
 		private Dictionary<string, string> gtranslate_dict;
-		public string gTranslate(string what, string lang_target, bool useApi = false, string ApiURL="")
+		public static string gTranslate(string what, string lang_target, bool useApi = false, string ApiURL = "")
 		{
 			string text = "en";
 			string text2 = "";
@@ -2723,11 +2749,11 @@ namespace PuvoxLibrary
 					DeveloperMachineAddition()
 				}));
 				//if (deserialize(text3, ref _dict) && _dict.ContainsKey(what))
-				 //text2 = _dict[what];
+				//text2 = _dict[what];
 			}
 			else
 			{
-                // https://stackoverflow.com/questions/26714426/what-is-the-meaning-of-google-translate-query-params
+				// https://stackoverflow.com/questions/26714426/what-is-the-meaning-of-google-translate-query-params
 				string text3 = urlRead(string.Concat(new string[]
 				{
 					"https://translate.googleapis.com/translate_a/single?client=gtx&sl=",
@@ -2757,13 +2783,13 @@ namespace PuvoxLibrary
 
 
 
-		
+
 		public static bool IsDeveloperMachine()
 		{
 			return Environment.GetEnvironmentVariable(Methods.developerMachineString) != null;
 		}
 
-		public string DeveloperMachineAddition()
+		public static string DeveloperMachineAddition()
 		{
 			if (Methods.IsDeveloperMachine())
 			{
@@ -2772,8 +2798,8 @@ namespace PuvoxLibrary
 			return "";
 		}
 
-		
-		 
+
+
 		public static string removeWhitespaces(string str)
 		{
 			return str.Replace("      ", " ").Replace("     ", " ").Replace("    ", " ").Replace("   ", " ").Replace("  ", " ").Replace(Environment.NewLine, "").Replace("\t", "");
@@ -2781,15 +2807,15 @@ namespace PuvoxLibrary
 
 
 		#region debugger
-		public static void m(int obj) 		{ Methods.m(obj.ToString()); }
-		public static void m(double obj)	{ Methods.m(obj.ToString()); }
-		public static void m(bool obj)		{ Methods.m(obj.ToString()); }
-		public static void m(Exception obj)	{ Methods.m(obj.ToString()); }
-		public static void m(object obj)	{ Methods.m(obj.ToString()); }
+		public static void m(int obj) { Methods.m(obj.ToString()); }
+		public static void m(double obj) { Methods.m(obj.ToString()); }
+		public static void m(bool obj) { Methods.m(obj.ToString()); }
+		public static void m(Exception obj) { Methods.m(obj.ToString()); }
+		public static void m(object obj) { Methods.m(obj.ToString()); }
 		public static void m(object[] obj)
 		{
-			if (obj == null){	Methods.m("null");	return;	}
-			string text = ""; foreach (object obj2 in obj) text = text + ((obj2 == null) ? "null" : obj.ToString()) + Methods.nl_; 
+			if (obj == null) { Methods.m("null"); return; }
+			string text = ""; foreach (object obj2 in obj) text = text + ((obj2 == null) ? "null" : obj.ToString()) + Methods.nl_;
 			Methods.m(text);
 		}
 		public static void m(string obj)
@@ -2797,31 +2823,31 @@ namespace PuvoxLibrary
 			System.Windows.Forms.MessageBox.Show(new Form { TopMost = true }, (obj == null) ? "null" : obj.ToString());
 		}
 
-		public static void cw(int obj) 		{ cw(obj.ToString()); }
-		public static void cw(double obj)	{ cw(obj.ToString()); }
-		public static void cw(bool obj)		{ cw(obj.ToString()); }
-		public static void cw(Exception obj){ cw(obj.ToString()); }
-		public static void cw(object obj)	{ cw(obj.ToString()); }
+		public static void cw(int obj) { cw(obj.ToString()); }
+		public static void cw(double obj) { cw(obj.ToString()); }
+		public static void cw(bool obj) { cw(obj.ToString()); }
+		public static void cw(Exception obj) { cw(obj.ToString()); }
+		public static void cw(object obj) { cw(obj.ToString()); }
 		public static void cw(object[] obj)
 		{
-			if (obj == null){ cw("null");	return;	}
-			string text = ""; foreach (object obj2 in obj) text = text + ((obj2 == null) ? "null" : obj.ToString()) + Methods.nl_; 
+			if (obj == null) { cw("null"); return; }
+			string text = ""; foreach (object obj2 in obj) text = text + ((obj2 == null) ? "null" : obj.ToString()) + Methods.nl_;
 			cw(text);
 		}
 		public static void cw(string obj)
 		{
-			Console.Write(obj== null ? "null" : obj.ToString());
+			Console.Write(obj == null ? "null" : obj.ToString());
 		}
-		
-		
+
+
 
 		// another kind of dumper (removed):  https://pastebin.com/KEzWthMp
-		
-		
-		public static string dump(object obj) 			{ return Methods.dump(obj, Methods.AllBindingFlags, false, 1, 1, ""); }
+
+
+		public static string dump(object obj) { return Methods.dump(obj, Methods.AllBindingFlags, false, 1, 1, ""); }
 		public static string dump(object obj, int deep) { return Methods.dump(obj, Methods.AllBindingFlags, false, deep, 1, ""); }
-		public static string dump(object obj, bool execMethods)			 { return Methods.dump(obj, Methods.AllBindingFlags, execMethods, 1, 1, ""); }
-		public static string dump(object obj, int deep, bool execMethods){ return Methods.dump(obj, Methods.AllBindingFlags, execMethods, deep, 1, ""); }
+		public static string dump(object obj, bool execMethods) { return Methods.dump(obj, Methods.AllBindingFlags, execMethods, 1, 1, ""); }
+		public static string dump(object obj, int deep, bool execMethods) { return Methods.dump(obj, Methods.AllBindingFlags, execMethods, deep, 1, ""); }
 		public static string dump(object obj, BindingFlags bindingFlags, bool execMethods) { return Methods.dump(obj, bindingFlags, execMethods, 1, 1, ""); }
 		// ugly-fied
 		private static string dump(object obj, BindingFlags bindingFlags, bool execMethods, int maxRecursiveDeep, int currentDeep, string prefix)
@@ -2940,7 +2966,7 @@ namespace PuvoxLibrary
 							{
 								MethodInfo methodInfo = (MethodInfo)memberInfo;
 								string text11 = methodInfo.ReturnType.ToString();
-								text6 = string.Concat(new string[] {"   [", text11.Replace("System.", ""), "]  (", Methods.tryEnumerabledString(methodInfo.GetParameters(), ", "), ")  <", Methods.AccessModifierType(methodInfo), ">" });
+								text6 = string.Concat(new string[] { "   [", text11.Replace("System.", ""), "]  (", Methods.tryEnumerabledString(methodInfo.GetParameters(), ", "), ")  <", Methods.AccessModifierType(methodInfo), ">" });
 								if (!execMethods)
 								{
 									goto IL_52F;
@@ -2992,14 +3018,14 @@ namespace PuvoxLibrary
 							{
 								EventInfo eventInfo = (EventInfo)memberInfo;
 								EventInfo left2 = eventInfo;
-								text6 = left2 == null ? "null" :  "ToString: " + eventInfo.ToString();
+								text6 = left2 == null ? "null" : "ToString: " + eventInfo.ToString();
 							}
 							else
 							{
 								text6 = "ToStringed: " + memberInfo.ToString();
 							}
 						}
-						IL_52F:;
+					IL_52F:;
 					}
 					catch
 					{
@@ -3032,8 +3058,8 @@ namespace PuvoxLibrary
 			foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
 			{
 				foreach (string str3 in (from q in keyValuePair.Value
-				orderby q
-				select q).ToList<string>())
+										 orderby q
+										 select q).ToList<string>())
 				{
 					text13 += str3;
 				}
@@ -3043,16 +3069,16 @@ namespace PuvoxLibrary
 			return text2;
 		}
 
-		
+
 		public static string AccessModifierType(object objInfo)
 		{
 			if (objInfo is FieldInfo)
 			{
 				FieldInfo fieldInfo = objInfo as FieldInfo;
-				if (fieldInfo.IsPrivate)	return "Private";
-				if (fieldInfo.IsFamily)		return "Protected";
-				if (fieldInfo.IsAssembly)	return "Internal";
-				if (fieldInfo.IsPublic)		return "Public";
+				if (fieldInfo.IsPrivate) return "Private";
+				if (fieldInfo.IsFamily) return "Protected";
+				if (fieldInfo.IsAssembly) return "Internal";
+				if (fieldInfo.IsPublic) return "Public";
 			}
 			else if (objInfo is PropertyInfo)
 			{
@@ -3070,10 +3096,10 @@ namespace PuvoxLibrary
 			else if (objInfo is MethodInfo)
 			{
 				MethodInfo methodInfo = objInfo as MethodInfo;
-				if (methodInfo.IsPrivate) 	return "Private"; 
-				if (methodInfo.IsFamily)  	return "Protected"; 
-				if (methodInfo.IsAssembly)	return "Internal";
-				if (methodInfo.IsPublic)	return "Public";
+				if (methodInfo.IsPrivate) return "Private";
+				if (methodInfo.IsFamily) return "Protected";
+				if (methodInfo.IsAssembly) return "Internal";
+				if (methodInfo.IsPublic) return "Public";
 			}
 			return "Did not find access modifier";
 		}
@@ -3100,9 +3126,9 @@ namespace PuvoxLibrary
 			}
 			return text;
 		}
-		
+
 		// ===========================
-		
+
 		public static object callMethod(object o, string methodName, params object[] args)
 		{
 			MethodInfo method = o.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3113,7 +3139,7 @@ namespace PuvoxLibrary
 			return null;
 		}
 
-		
+
 		public static MemberInfo[] GetMembersInclPrivateBase_static(Type t, BindingFlags flags)
 		{
 			MemberInfo[] result;
@@ -3135,7 +3161,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static object propertyGet2(object obj_, string propName)
 		{
 			PropertyInfo property = obj_.GetType().GetProperty(propName);
@@ -3151,8 +3177,8 @@ namespace PuvoxLibrary
 			return null;
 		}
 
-		
-        // usage:  propertyGet<bool>(....)
+
+		// usage:  propertyGet<bool>(....)
 		public static T propertyGet<T>(object obj_, string propName)
 		{
 			T result;
@@ -3213,8 +3239,8 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
-        // older propertyset : https://pastebin.com/W3WUDsWg
+
+		// older propertyset : https://pastebin.com/W3WUDsWg
 		public static bool propertySet(object obj_, string propName, object value)
 		{
 			value.ToString();
@@ -3261,7 +3287,7 @@ namespace PuvoxLibrary
 			return false;
 		}
 
-		
+
 		public static bool propertyExists(object obj_, string propName)
 		{
 			bool result;
@@ -3292,7 +3318,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static bool propertySet_static(object obj_, string propName, string value)
 		{
 			bool result;
@@ -3345,7 +3371,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static bool propertyHideOrShow(object obj_, string propertyName, bool Show_or_Hide)
 		{
 			BrowsableAttribute browsableAttribute = TypeDescriptor.GetProperties(obj_.GetType())[propertyName].Attributes[typeof(BrowsableAttribute)] as BrowsableAttribute;
@@ -3358,8 +3384,8 @@ namespace PuvoxLibrary
 			return false;
 		}
 
-		
-        // usage:  propertyGet<bool>(....)
+
+		// usage:  propertyGet<bool>(....)
 		public static Type propertyType(object obj_, string propName)
 		{
 			PropertyInfo property = obj_.GetType().GetProperty(propName);
@@ -3376,13 +3402,13 @@ namespace PuvoxLibrary
 		}
 
 
-		public string PrintProperties(object obj)
+		public static string PrintProperties(object obj)
 		{
 			return PrintProperties(obj, 0);
 		}
 
-		
-		public string PrintProperties(object obj, int indent)
+
+		public static string PrintProperties(object obj, int indent)
 		{
 			string result;
 			try
@@ -3431,9 +3457,9 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
 
-		public string DisplayObjectInfo(object o)
+
+		public static string DisplayObjectInfo(object o)
 		{
 			string result;
 			try
@@ -3492,6 +3518,7 @@ namespace PuvoxLibrary
 
 		// ======================= form functions ====================//
 
+		/*
         private void RemoveEvents(System.Windows.Controls.Button b)
         {
             EventInfo[] info = typeof(System.Windows.Controls.Button).GetEvents(); //GetEvents(BindingFlags.Instance | BindingFlags.Public);
@@ -3506,7 +3533,7 @@ namespace PuvoxLibrary
 
         }
         // RemoveRoutedEventHandlers(button, Button.ClickEvent);
-        public void RemoveRoutedEventHandlers(UIElement element, RoutedEvent routedEvent)
+        public static void RemoveRoutedEventHandlers(UIElement element, RoutedEvent routedEvent)
         {
             // Get the EventHandlersStore instance which holds event handlers for the specified element.
             // The EventHandlersStore class is declared as internal.
@@ -3531,9 +3558,10 @@ namespace PuvoxLibrary
                 element.RemoveHandler(routedEvent, routedEventHandler.Handler);
         }
 
-        // ======================= form functions ====================//
-		
-		
+		*/
+		// ======================= form functions ====================//
+
+
 
 		public static double NetFrameworkVersion()
 		{
@@ -3577,7 +3605,7 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static bool isInt(object Expression)
 		{
 			bool result;
@@ -3594,148 +3622,154 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-	
-		
 
-		public int decimalsAmount(double content){
-			string num= double_to_decimal(content).ToString();
-			return (num.Length - num.IndexOf(".")-1);
+
+
+		public static int decimalsAmount(double content)
+		{
+			string num = double_to_decimal(content).ToString();
+			return (num.Length - num.IndexOf(".") - 1);
 		}
-		
-				 
-		public decimal double_to_decimal(double num){
+
+
+		public static decimal double_to_decimal(double num)
+		{
 			//i.e "5E-07"  or  "1.2345E-02"
 			return double_to_decimal_static(num);
 		}
-		public static decimal double_to_decimal_static(double num){
+		public static decimal double_to_decimal_static(double num)
+		{
 			//i.e "5E-07"  or  "1.2345E-02" to correct
-			return Decimal.Parse( (num).ToString(), System.Globalization.NumberStyles.Float);
-		}	
-		
-		
-		
+			return Decimal.Parse((num).ToString(), System.Globalization.NumberStyles.Float);
+		}
+
+
+
 		public static void DownloadFile(string url, string location)
 		{
-			using (WebClient client = new WebClient()) 
-  			{
-				try{
-					client.DownloadFile( new Uri(url), location);
+			using (WebClient client = new WebClient())
+			{
+				try
+				{
+					client.DownloadFile(new Uri(url), location);
 				}
-				catch(Exception e){ System.Windows.Forms.MessageBox.Show( "Cant download "+ url + "( " + e.Message + ")" ); }
+				catch (Exception e) { System.Windows.Forms.MessageBox.Show("Cant download " + url + "( " + e.Message + ")"); }
 			}
 		}
 
-		
+
 		public static string TempFile(string url)
-		{ 
+		{
 			Uri uri = new Uri(url);
-			string tmp_path = convertBackSlashes ( Path.GetTempPath() + @"\"+  url.Replace(uri.Scheme,"").Replace("://","").Replace("//","") );
-			if (!File.Exists(tmp_path)) {
-				string dir = Path.GetDirectoryName( tmp_path );
-				if( ! Directory.Exists( dir ) ) {
-					Directory.CreateDirectory( dir );
+			string tmp_path = convertBackSlashes(Path.GetTempPath() + @"\" + url.Replace(uri.Scheme, "").Replace("://", "").Replace("//", ""));
+			if (!File.Exists(tmp_path))
+			{
+				string dir = Path.GetDirectoryName(tmp_path);
+				if (!Directory.Exists(dir))
+				{
+					Directory.CreateDirectory(dir);
 				}
-				DownloadFile(url, tmp_path) ; 
-			} 
+				DownloadFile(url, tmp_path);
+			}
 			return tmp_path;
 		}
-		
-		public void errorlog(string message)
+
+		public static void errorlog(string message)
 		{
 		}
 
-		
-		
-		
-		
 
 
 
-        public static int digitsPrecision(NinjaTrader.NinjaScript.NinjaScriptBase NSB_) { return digitsPrecision(NSB_.TickSize); } public static int digitsPrecision(double tickSize)
-        {
-            int decimals = 0;
-            if (tickSize == 1) { decimals = 0; }
-            else if (tickSize == 0.5) { decimals = 1; }
-            else if (tickSize == 0.25) { decimals = 1; }
-            else if (tickSize == 0.1) { decimals = 1; }
-            else if (tickSize == 0.01) { decimals = 2; }
-            else if (tickSize == 0.001) { decimals = 3; }
-            else if (tickSize == 0.005) { decimals = 3; }
-            else if (tickSize == 0.025) { decimals = 3; }
-            else if (tickSize == 0.03125) { decimals = 3; }
-            else if (tickSize == 0.0001) { decimals = 4; }
-            else if (tickSize == 1E-05) { decimals = 5; } //0.00001
-            else if (tickSize == 5E-05) { decimals = 5; } //0.00005
-            else if (tickSize == 1E-06) { decimals = 6; } //0.000001
-            else if (tickSize == 1E-07) { decimals = 7; } //0.0000001
-            else if (tickSize == 5E-07) { decimals = 7; } //0.0000005
-            return decimals;
-        }
 
 
 
-        public int rondTicksToDecimals(double content){
+		public static int digitsPrecision(double tickSize)
+		{
+			int decimals = 0;
+			if (tickSize == 1) { decimals = 0; }
+			else if (tickSize == 0.5) { decimals = 1; }
+			else if (tickSize == 0.25) { decimals = 1; }
+			else if (tickSize == 0.1) { decimals = 1; }
+			else if (tickSize == 0.01) { decimals = 2; }
+			else if (tickSize == 0.001) { decimals = 3; }
+			else if (tickSize == 0.005) { decimals = 3; }
+			else if (tickSize == 0.025) { decimals = 3; }
+			else if (tickSize == 0.03125) { decimals = 3; }
+			else if (tickSize == 0.0001) { decimals = 4; }
+			else if (tickSize == 1E-05) { decimals = 5; } //0.00001
+			else if (tickSize == 5E-05) { decimals = 5; } //0.00005
+			else if (tickSize == 1E-06) { decimals = 6; } //0.000001
+			else if (tickSize == 1E-07) { decimals = 7; } //0.0000001
+			else if (tickSize == 5E-07) { decimals = 7; } //0.0000005
+			return decimals;
+		}
+
+
+
+		public static int rondTicksToDecimals(double content)
+		{
 			int response = -9999;
-				 if(content ==1)			{ response = 1;}
-			else if(content ==0.5)			{ response = 2;}
-			else if(content ==0.25) 		{ response = 2;}
-			else if(content ==0.1)			{ response = 2;}
-			else if(content ==0.01) 		{ response = 3;	}
-			else if(content ==0.001)		{ response = 3;	}
-			else if(content ==0.005)		{ response = 3;	}
-			else if(content ==0.025)		{ response = 3;	}
-			else if(content ==0.03125)		{ response = 5;	}
-			else if(content ==0.0001)		{ response = 4;	}
-			else if(content ==0.00001) 		{ response = 5;	}
-			else if(content ==0.00005) 		{ response = 5;	}
-			else if(content ==0.000001) 	{ response = 6;	}
-			else if(content ==0.000005) 	{ response = 6;	}
-			else if(content ==0.0000001) 	{ response = 7;	}
-			else if(content ==0.0000005) 	{ response = 7;	}
+			if (content == 1) { response = 1; }
+			else if (content == 0.5) { response = 2; }
+			else if (content == 0.25) { response = 2; }
+			else if (content == 0.1) { response = 2; }
+			else if (content == 0.01) { response = 3; }
+			else if (content == 0.001) { response = 3; }
+			else if (content == 0.005) { response = 3; }
+			else if (content == 0.025) { response = 3; }
+			else if (content == 0.03125) { response = 5; }
+			else if (content == 0.0001) { response = 4; }
+			else if (content == 0.00001) { response = 5; }
+			else if (content == 0.00005) { response = 5; }
+			else if (content == 0.000001) { response = 6; }
+			else if (content == 0.000005) { response = 6; }
+			else if (content == 0.0000001) { response = 7; }
+			else if (content == 0.0000005) { response = 7; }
 			return response;
-			
-			
-				 if(content ==1)			{ response = 99;}
-			else if(content ==0.5)			{ response = 99;}
-			else if(content ==0.25) 		{ response = 99;}
-			else if(content ==0.1)			{ response = 99;}
-			else if(content ==0.01) 		{ response = 0;	}
-			else if(content ==0.001)		{ response = 1;	}
-			else if(content ==0.005)		{ response = 0;	}
-			else if(content ==0.025)		{ response = 0;	}
-			else if(content ==0.03125)		{ response = 0;	}
-			else if(content ==0.0001)		{ response = 2;	}
-			else if(content ==0.00001) 		{ response = 3;	}
-			else if(content ==0.00005) 		{ response = 3;	}
-			else if(content ==0.000001) 	{ response = 4;	}
-			else if(content ==0.0000001) 	{ response = 5;	}
-			else if(content ==0.0000005) 	{ response = 5;	}
+
+
+			if (content == 1) { response = 99; }
+			else if (content == 0.5) { response = 99; }
+			else if (content == 0.25) { response = 99; }
+			else if (content == 0.1) { response = 99; }
+			else if (content == 0.01) { response = 0; }
+			else if (content == 0.001) { response = 1; }
+			else if (content == 0.005) { response = 0; }
+			else if (content == 0.025) { response = 0; }
+			else if (content == 0.03125) { response = 0; }
+			else if (content == 0.0001) { response = 2; }
+			else if (content == 0.00001) { response = 3; }
+			else if (content == 0.00005) { response = 3; }
+			else if (content == 0.000001) { response = 4; }
+			else if (content == 0.0000001) { response = 5; }
+			else if (content == 0.0000005) { response = 5; }
 			return response;
 		}
 
-        public static int AfterPointNumberOfDigits(double tickSize)
-        {
-            double t = tickSize;
-            int i = 0;
-            while (t != Math.Round(t, 0)) //better to use ApproxCompare, because of double in-precision
-            {
-                t = t * 10;
-                i++;
-            }
+		public static int AfterPointNumberOfDigits(double tickSize)
+		{
+			double t = tickSize;
+			int i = 0;
+			while (t != Math.Round(t, 0)) //better to use ApproxCompare, because of double in-precision
+			{
+				t = t * 10;
+				i++;
+			}
 
-            return (i);
-        }
+			return (i);
+		}
 
-        public string roundTo(double num, double tickSize)
-        {
-            int digits = digitsAfterDot(tickSize);
-            return num.ToString("N" + digits);
-        }
-		
-        // C:\Windows\media    :   Windows Information Bar, Windows Ringout, Speech Sleep, Speech On, Windows Notify Calendar, Windows Unlock, tada, Alarm03, Alarm02, Ring02, notify, chimes
-        //good: ding chimes chord
-    
-		public string defaultSound = "Speech On"; 
+		public static string roundTo(double num, double tickSize)
+		{
+			int digits = digitsAfterDot(tickSize);
+			return num.ToString("N" + digits);
+		}
+
+		// C:\Windows\media    :   Windows Information Bar, Windows Ringout, Speech Sleep, Speech On, Windows Notify Calendar, Windows Unlock, tada, Alarm03, Alarm02, Ring02, notify, chimes
+		//good: ding chimes chord
+
+		public static string defaultSound = "Speech On";
 
 		public static bool playSound(string path)
 		{
@@ -3764,28 +3798,28 @@ namespace PuvoxLibrary
 			form1.Height = 130;
 			//logForm.Resize  += resizeTextarea  ; 
 			form1.Text = @"Alert";
-			form1.TopMost = true; 
+			form1.TopMost = true;
 			form1.TopLevel = true;
 			form1.Opacity = 0.95;
-			form1.StartPosition = FormStartPosition.CenterScreen; 
+			form1.StartPosition = FormStartPosition.CenterScreen;
 			//
-			System.Windows.Forms.TextBox textarea= new System.Windows.Forms.TextBox();
-			form1.Controls.Add( textarea);
+			System.Windows.Forms.TextBox textarea = new System.Windows.Forms.TextBox();
+			form1.Controls.Add(textarea);
 			textarea.Multiline = true;
 			textarea.Width = textarea.Parent.Width;
 			textarea.Height = textarea.Parent.Height;
-			textarea.Text= message;
+			textarea.Text = message;
 			form1.Show();
 			//textarea.Font = new SimpleFont(textarea.Font.FontFamily, 11);
 		}
-		public void destroyForm(bool dispose)
+		public static void destroyForm(bool dispose)
 		{
 			//if(logForm != null) logForm.Close();
 			//if (dispose) logForm.Dispose();
 			//logForm = null;
 		}
-		 
-		
+
+
 
 		#region Log 
 
@@ -3797,7 +3831,7 @@ namespace PuvoxLibrary
 
 		public static void enableExceptions(bool show = false)
 		{
-			AppDomain.CurrentDomain.FirstChanceException += delegate(object sender, FirstChanceExceptionEventArgs eventArgs)
+			AppDomain.CurrentDomain.FirstChanceException += delegate (object sender, FirstChanceExceptionEventArgs eventArgs)
 			{
 				StackTrace stackTrace = new StackTrace();
 				MethodBase method = stackTrace.GetFrame(1).GetMethod();
@@ -3834,14 +3868,14 @@ namespace PuvoxLibrary
 			}
 			File.AppendAllText(location, text);
 		}
-	
+
 		[STAThread]
 		public static void catchAllExceptions()
 		{
 			AppDomain.CurrentDomain.UnhandledException += Methods.HandleUnhandledException;
 		}
 
-		
+
 		public static void HandleUnhandledException(object sender, UnhandledExceptionEventArgs e)
 		{
 			if (!Methods.inCatchAllLoop)
@@ -3851,8 +3885,8 @@ namespace PuvoxLibrary
 				Methods.inCatchAllLoop = false;
 			}
 		}
-		
-		
+
+
 		public static void logError(object obj_)
 		{
 			FileOperations.Write(errorLogFile, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine + obj_.ToString() + Environment.NewLine);
@@ -3899,13 +3933,13 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		
+
 		public static string ExceptionMessage(Exception e, object targetObj)
 		{
 			return Methods.ExceptionMessage(e, targetObj, "");
 		}
 
-		
+
 		public static string ExceptionMessage(Exception e, object obj_, string customMessage)
 		{
 			string text = "";
@@ -3974,18 +4008,18 @@ namespace PuvoxLibrary
 			text = text + "======================" + Methods.nl_;
 			return text;
 		}
-		
+
 		#endregion
-		
-		
-		
-		public string appName()
+
+
+
+		public static string appName()
 		{
 			string location = Assembly.GetEntryAssembly().Location;
 			return Path.GetFileNameWithoutExtension(location);
 		}
 
-		public void ExecuteCommand(string command)
+		public static void ExecuteCommand(string command)
 		{
 			try
 			{
@@ -4004,361 +4038,368 @@ namespace PuvoxLibrary
 		}
 
 
-		
 
 
 
-		public static string tmpFilePath = Environment.GetEnvironmentVariable("tmp") + "\\"; 
+
+		public static string tmpFilePath = Environment.GetEnvironmentVariable("tmp") + "\\";
 		public static string pathDesktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
- 
-		
+
+
 		public static string nl = Environment.NewLine;
 
-		public static string[] singleTypes = new string[]{	"System.Double","System.Int32","System.String","System.Float","System.Boolean"	};
+		public static string[] singleTypes = new string[] { "System.Double", "System.Int32", "System.String", "System.Float", "System.Boolean" };
 
-		
+
 		internal static BindingFlags AllBindingFlags = BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.InvokeMethod | BindingFlags.CreateInstance | BindingFlags.GetField | BindingFlags.SetField | BindingFlags.GetProperty | BindingFlags.SetProperty | BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty | BindingFlags.ExactBinding | BindingFlags.SuppressChangeType | BindingFlags.OptionalParamBinding | BindingFlags.IgnoreReturn;
 
 		internal static BindingFlags AllBindingFlags_noinherit = BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod | BindingFlags.CreateInstance | BindingFlags.GetField | BindingFlags.SetField | BindingFlags.GetProperty | BindingFlags.SetProperty | BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty | BindingFlags.ExactBinding | BindingFlags.SuppressChangeType | BindingFlags.OptionalParamBinding | BindingFlags.IgnoreReturn;
 
-		public static bool inCatchAllLoop = false; 
+		public static bool inCatchAllLoop = false;
 		//private static object fileCheckObj = new object(); 
 		//public static string errorLogFile = Environment.GetEnvironmentVariable("tmp") + "\\_errorlogs_c#.log"; 
-		public static string nl_ = Environment.NewLine; 
+		public static string nl_ = Environment.NewLine;
 		public static string tmpDir = Environment.GetEnvironmentVariable("tmp") + "\\";
 
-		
-		
-        // https://stackoverflow.com/questions/14967618/deserialize-json-to-class-manually-with-reflection/50492864#50492864
-        //new update here, but doesnt work well : http://qaru.site/questions/6250657/deserialize-json-to-class-manually-with-reflection
-        public static class JsonMaker
-        {
-            public static Dictionary<string, object> ParseJSON(string json)
-            {
-                int end;
-                return ParseJSON(json, 0, out end);
-            }
-            private static Dictionary<string, object> ParseJSON(string json, int start, out int end)
-            {
-                Dictionary<string, object> dict = new Dictionary<string, object>();
-                bool escbegin = false;
-                bool escend = false;
-                bool inquotes = false;
-                string key = null;
-                int cend;
-                StringBuilder sb = new StringBuilder();
-                Dictionary<string, object> child = null;
-                List<object> arraylist = null;
-                Regex regex = new Regex(@"\\u([0-9a-z]{4})", RegexOptions.IgnoreCase);
-                int autoKey = 0;
-                bool inSingleQuotes = false;
-                bool inDoubleQuotes = false;
-                for (int i = start; i < json.Length; i++)
-                {
-                    char c = json[i];
-                    if (c == '\\') escbegin = !escbegin;
-                    if (!escbegin)
-                    {
-                        if (c == '"' && !inSingleQuotes)
-                        {
-                            inDoubleQuotes = !inDoubleQuotes;
-                            inquotes = !inquotes;
-                            if (!inquotes && arraylist != null)
-                            {
-                                arraylist.Add(DecodeString(regex, sb.ToString()));
-                                sb.Length = 0;
-                            }
-                            continue;
-                        }
-                        else if (c == '\'' && !inDoubleQuotes)
-                        {
-                            inSingleQuotes = !inSingleQuotes;
-                            inquotes = !inquotes;
-                            if (!inquotes && arraylist != null)
-                            {
-                                arraylist.Add(DecodeString(regex, sb.ToString()));
-                                sb.Length = 0;
-                            }
-                            continue;
-                        }
-                        if (!inquotes)
-                        {
-                            switch (c)
-                            {
-                                case '{':
-                                    if (i != start)
-                                    {
-                                        child = ParseJSON(json, i, out cend);
-                                        if (arraylist != null) arraylist.Add(child);
-                                        else
-                                        {
-                                            dict.Add(key.Trim(), child);
-                                            key = null;
-                                        }
-                                        i = cend;
-                                    }
-                                    continue;
-                                case '}':
-                                    end = i;
-                                    if (key != null)
-                                    {
-                                        if (arraylist != null) dict.Add(key.Trim(), arraylist);
-                                        else dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
-                                    }
-                                    return dict;
-                                case '[':
-                                    arraylist = new List<object>();
-                                    continue;
-                                case ']':
-                                    if (key == null)
-                                    {
-                                        key = "array" + autoKey.ToString();
-                                        autoKey++;
-                                    }
-                                    if (arraylist != null && sb.Length > 0)
-                                    {
-                                        arraylist.Add(sb.ToString());
-                                        sb.Length = 0;
-                                    }
-                                    dict.Add(key.Trim(), arraylist);
-                                    arraylist = null;
-                                    key = null;
-                                    continue;
-                                case ',':
-                                    if (arraylist == null && key != null)
-                                    {
-                                        dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
-                                        key = null;
-                                        sb.Length = 0;
-                                    }
-                                    if (arraylist != null && sb.Length > 0)
-                                    {
-                                        arraylist.Add(sb.ToString());
-                                        sb.Length = 0;
-                                    }
-                                    continue;
-                                case ':':
-                                    key = DecodeString(regex, sb.ToString());
-                                    sb.Length = 0;
-                                    continue;
-                            }
-                        }
-                    }
-                    sb.Append(c);
-                    if (escend) escbegin = false;
-                    if (escbegin) escend = true;
-                    else escend = false;
-                }
-                end = json.Length - 1;
-                return dict; //theoretically shouldn't ever get here
-            }
 
-            private static string DecodeString(Regex regex, string str)
-            {
-                return Regex.Unescape(regex.Replace(str, match => char.ConvertFromUtf32(Int32.Parse(match.Groups[1].Value, System.Globalization.NumberStyles.HexNumber))));
-            }
-        }
 
-		
+		// https://stackoverflow.com/questions/14967618/deserialize-json-to-class-manually-with-reflection/50492864#50492864
+		//new update here, but doesnt work well : http://qaru.site/questions/6250657/deserialize-json-to-class-manually-with-reflection
+		public static class JsonMaker
+		{
+			public static Dictionary<string, object> ParseJSON(string json)
+			{
+				int end;
+				return ParseJSON(json, 0, out end);
+			}
+			private static Dictionary<string, object> ParseJSON(string json, int start, out int end)
+			{
+				Dictionary<string, object> dict = new Dictionary<string, object>();
+				bool escbegin = false;
+				bool escend = false;
+				bool inquotes = false;
+				string key = null;
+				int cend;
+				StringBuilder sb = new StringBuilder();
+				Dictionary<string, object> child = null;
+				List<object> arraylist = null;
+				Regex regex = new Regex(@"\\u([0-9a-z]{4})", RegexOptions.IgnoreCase);
+				int autoKey = 0;
+				bool inSingleQuotes = false;
+				bool inDoubleQuotes = false;
+				for (int i = start; i < json.Length; i++)
+				{
+					char c = json[i];
+					if (c == '\\') escbegin = !escbegin;
+					if (!escbegin)
+					{
+						if (c == '"' && !inSingleQuotes)
+						{
+							inDoubleQuotes = !inDoubleQuotes;
+							inquotes = !inquotes;
+							if (!inquotes && arraylist != null)
+							{
+								arraylist.Add(DecodeString(regex, sb.ToString()));
+								sb.Length = 0;
+							}
+							continue;
+						}
+						else if (c == '\'' && !inDoubleQuotes)
+						{
+							inSingleQuotes = !inSingleQuotes;
+							inquotes = !inquotes;
+							if (!inquotes && arraylist != null)
+							{
+								arraylist.Add(DecodeString(regex, sb.ToString()));
+								sb.Length = 0;
+							}
+							continue;
+						}
+						if (!inquotes)
+						{
+							switch (c)
+							{
+								case '{':
+									if (i != start)
+									{
+										child = ParseJSON(json, i, out cend);
+										if (arraylist != null) arraylist.Add(child);
+										else
+										{
+											dict.Add(key.Trim(), child);
+											key = null;
+										}
+										i = cend;
+									}
+									continue;
+								case '}':
+									end = i;
+									if (key != null)
+									{
+										if (arraylist != null) dict.Add(key.Trim(), arraylist);
+										else dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
+									}
+									return dict;
+								case '[':
+									arraylist = new List<object>();
+									continue;
+								case ']':
+									if (key == null)
+									{
+										key = "array" + autoKey.ToString();
+										autoKey++;
+									}
+									if (arraylist != null && sb.Length > 0)
+									{
+										arraylist.Add(sb.ToString());
+										sb.Length = 0;
+									}
+									dict.Add(key.Trim(), arraylist);
+									arraylist = null;
+									key = null;
+									continue;
+								case ',':
+									if (arraylist == null && key != null)
+									{
+										dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
+										key = null;
+										sb.Length = 0;
+									}
+									if (arraylist != null && sb.Length > 0)
+									{
+										arraylist.Add(sb.ToString());
+										sb.Length = 0;
+									}
+									continue;
+								case ':':
+									key = DecodeString(regex, sb.ToString());
+									sb.Length = 0;
+									continue;
+							}
+						}
+					}
+					sb.Append(c);
+					if (escend) escbegin = false;
+					if (escbegin) escend = true;
+					else escend = false;
+				}
+				end = json.Length - 1;
+				return dict; //theoretically shouldn't ever get here
+			}
+
+			private static string DecodeString(Regex regex, string str)
+			{
+				return Regex.Unescape(regex.Replace(str, match => char.ConvertFromUtf32(Int32.Parse(match.Groups[1].Value, System.Globalization.NumberStyles.HexNumber))));
+			}
+		}
 
 
 
 
 
-        public class JsonHelper
-        {
-            /// <summary>
-            /// Parses the JSON.
-            /// Thanks to http://stackoverflow.com/questions/14967618/deserialize-json-to-class-manually-with-reflection
-            /// </summary>
-            /// <param name="json">The json.</param>
-            /// <returns></returns>
-            public static Dictionary<string, object> DeserializeJson(string json)
-            {
-                int end;
-                return DeserializeJson(json, 0, out end);
-            }
 
-            /// <summary>
-            /// Parses the JSON.
-            /// </summary>
-            /// <param name="json">The json.</param>
-            /// <param name="start">The start.</param>
-            /// <param name="end">The end.</param>
-            /// <returns></returns>
-            private static Dictionary<string, object> DeserializeJson(string json, int start, out int end)
-            {
 
-                if (!IsJson(json))
-                {
-                    end = 0;
-                    return null;
-                }
+		public static class JsonHelper
+		{
+			/// <summary>
+			/// Parses the JSON.
+			/// Thanks to http://stackoverflow.com/questions/14967618/deserialize-json-to-class-manually-with-reflection
+			/// </summary>
+			/// <param name="json">The json.</param>
+			/// <returns></returns>
+			public static Dictionary<string, object> DeserializeJson(string json)
+			{
+				int end;
+				return DeserializeJson(json, 0, out end);
+			}
 
-                var dict = new Dictionary<string, object>();
-                var escbegin = false;
-                var escend = false;
-                var inquotes = false;
-                string key = null;
-                var sb = new StringBuilder();
-                List<object> arraylist = null;
-                var regex = new Regex(@"\\u([0-9a-z]{4})", RegexOptions.IgnoreCase);
-                var autoKey = 0;
-                var inSingleQuotes = false;
-                var inDoubleQuotes = false;
+			/// <summary>
+			/// Parses the JSON.
+			/// </summary>
+			/// <param name="json">The json.</param>
+			/// <param name="start">The start.</param>
+			/// <param name="end">The end.</param>
+			/// <returns></returns>
+			private static Dictionary<string, object> DeserializeJson(string json, int start, out int end)
+			{
 
-                for (var i = start; i < json.Length; i++)
-                {
-                    var c = json[i];
-                    if (c == '\\') escbegin = !escbegin;
-                    if (!escbegin)
-                    {
-                        if (c == '"' && !inSingleQuotes)
-                        {
-                            inDoubleQuotes = !inDoubleQuotes;
-                            inquotes = !inquotes;
-                            if (!inquotes && arraylist != null)
-                            {
-                                arraylist.Add(DecodeString(regex, sb.ToString()));
-                                sb.Length = 0;
-                            }
+				if (!IsJson(json))
+				{
+					end = 0;
+					return null;
+				}
 
-                            continue;
-                        }
+				var dict = new Dictionary<string, object>();
+				var escbegin = false;
+				var escend = false;
+				var inquotes = false;
+				string key = null;
+				var sb = new StringBuilder();
+				List<object> arraylist = null;
+				var regex = new Regex(@"\\u([0-9a-z]{4})", RegexOptions.IgnoreCase);
+				var autoKey = 0;
+				var inSingleQuotes = false;
+				var inDoubleQuotes = false;
 
-                        if (c == '\'' && !inDoubleQuotes)
-                        {
-                            inSingleQuotes = !inSingleQuotes;
-                            inquotes = !inquotes;
-                            if (!inquotes && arraylist != null)
-                            {
-                                arraylist.Add(DecodeString(regex, sb.ToString()));
-                                sb.Length = 0;
-                            }
+				for (var i = start; i < json.Length; i++)
+				{
+					var c = json[i];
+					if (c == '\\') escbegin = !escbegin;
+					if (!escbegin)
+					{
+						if (c == '"' && !inSingleQuotes)
+						{
+							inDoubleQuotes = !inDoubleQuotes;
+							inquotes = !inquotes;
+							if (!inquotes && arraylist != null)
+							{
+								arraylist.Add(DecodeString(regex, sb.ToString()));
+								sb.Length = 0;
+							}
 
-                            continue;
-                        }
+							continue;
+						}
 
-                        if (!inquotes)
-                        {
-                            switch (c)
-                            {
-                                case '{':
-                                    if (i != start)
-                                    {
-                                        int cend;
-                                        var child = DeserializeJson(json, i, out cend);
-                                        if (arraylist != null)
-                                        {
-                                            arraylist.Add(child);
-                                        }
-                                        else
-                                        {
-                                            dict.Add(key.Trim(), child);
-                                            key = null;
-                                        }
+						if (c == '\'' && !inDoubleQuotes)
+						{
+							inSingleQuotes = !inSingleQuotes;
+							inquotes = !inquotes;
+							if (!inquotes && arraylist != null)
+							{
+								arraylist.Add(DecodeString(regex, sb.ToString()));
+								sb.Length = 0;
+							}
 
-                                        i = cend;
-                                    }
+							continue;
+						}
 
-                                    continue;
+						if (!inquotes)
+						{
+							switch (c)
+							{
+								case '{':
+									if (i != start)
+									{
+										int cend;
+										var child = DeserializeJson(json, i, out cend);
+										if (arraylist != null)
+										{
+											arraylist.Add(child);
+										}
+										else
+										{
+											dict.Add(key.Trim(), child);
+											key = null;
+										}
 
-                                case '}':
-                                    end = i;
+										i = cend;
+									}
 
-                                    if (key != null)
-                                    {
-                                        if (arraylist != null) dict.Add(key.Trim(), arraylist);
-                                        else dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
-                                    }
+									continue;
 
-                                    return dict;
+								case '}':
+									end = i;
 
-                                case '[':
-                                    arraylist = new List<object>();
-                                    continue;
+									if (key != null)
+									{
+										if (arraylist != null) dict.Add(key.Trim(), arraylist);
+										else dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
+									}
 
-                                case ']':
-                                    if (key == null)
-                                    {
-                                        key = "array" + autoKey;
-                                        autoKey++;
-                                    }
+									return dict;
 
-                                    if (arraylist != null && sb.Length > 0)
-                                    {
-                                        arraylist.Add(sb.ToString());
-                                        sb.Length = 0;
-                                    }
+								case '[':
+									arraylist = new List<object>();
+									continue;
 
-                                    dict.Add(key.Trim(), arraylist);
-                                    arraylist = null;
-                                    key = null;
-                                    continue;
+								case ']':
+									if (key == null)
+									{
+										key = "array" + autoKey;
+										autoKey++;
+									}
 
-                                case ',':
-                                    if (arraylist == null && key != null)
-                                    {
-                                        dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
-                                        key = null;
-                                        sb.Length = 0;
-                                    }
+									if (arraylist != null && sb.Length > 0)
+									{
+										arraylist.Add(sb.ToString());
+										sb.Length = 0;
+									}
 
-                                    if (arraylist != null && sb.Length > 0)
-                                    {
-                                        arraylist.Add(sb.ToString());
-                                        sb.Length = 0;
-                                    }
+									dict.Add(key.Trim(), arraylist);
+									arraylist = null;
+									key = null;
+									continue;
 
-                                    continue;
+								case ',':
+									if (arraylist == null && key != null)
+									{
+										dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
+										key = null;
+										sb.Length = 0;
+									}
 
-                                case ':':
-                                    key = DecodeString(regex, sb.ToString());
-                                    sb.Length = 0;
+									if (arraylist != null && sb.Length > 0)
+									{
+										arraylist.Add(sb.ToString());
+										sb.Length = 0;
+									}
 
-                                    continue;
-                            }
-                        }
-                    }
+									continue;
 
-                    sb.Append(c);
+								case ':':
+									key = DecodeString(regex, sb.ToString());
+									sb.Length = 0;
 
-                    if (escend) escbegin = false;
-                    escend = escbegin;
-                }
+									continue;
+							}
+						}
+					}
 
-                end = json.Length - 1;
-                return dict; // theoretically shouldn't ever get here
-            }
+					sb.Append(c);
 
-            /// <summary>
-            /// Decodes the string.
-            /// </summary>
-            /// <param name="regex">The regex.</param>
-            /// <param name="str">The STR.</param>
-            /// <returns></returns>
-            private static string DecodeString(Regex regex, string str)
-            {
-                return
-                    Regex.Unescape(regex.Replace(str,
-                        match =>
-                            char.ConvertFromUtf32(Int32.Parse(match.Groups[1].Value,
-                                System.Globalization.NumberStyles
-                                    .HexNumber))));
-            }
+					if (escend) escbegin = false;
+					escend = escbegin;
+				}
 
-            /// <summary>
-            /// Returns true if string has an "appearance" of being JSON-like
-            /// </summary>
-            /// <param name="input"></param>
-            /// <returns></returns>
-            public static bool IsJson(string input)
-            {
-                input = input.Trim();
-                return input.StartsWith("{") && input.EndsWith("}") || input.StartsWith("[") && input.EndsWith("]");
-            }
-        }
-        /*
+				end = json.Length - 1;
+				return dict; // theoretically shouldn't ever get here
+			}
+
+			/// <summary>
+			/// Decodes the string.
+			/// </summary>
+			/// <param name="regex">The regex.</param>
+			/// <param name="str">The STR.</param>
+			/// <returns></returns>
+			private static string DecodeString(Regex regex, string str)
+			{
+				return
+					Regex.Unescape(regex.Replace(str,
+						match =>
+							char.ConvertFromUtf32(Int32.Parse(match.Groups[1].Value,
+								System.Globalization.NumberStyles
+									.HexNumber))));
+			}
+
+			/// <summary>
+			/// Returns true if string has an "appearance" of being JSON-like
+			/// </summary>
+			/// <param name="input"></param>
+			/// <returns></returns>
+			public static bool IsJson(string input)
+			{
+				input = input.Trim();
+				return input.StartsWith("{") && input.EndsWith("}") || input.StartsWith("[") && input.EndsWith("]");
+			}
+		}
+
+
+
+
+
+
+
+		/*
         public class DynamicJsonObject : System.Dynamic.DynamicObject
         {
             private readonly IDictionary<string, object> _dictionary;
@@ -4462,42 +4503,37 @@ namespace PuvoxLibrary
 
 
 
+		/*
+
+
+				// %appdata%\Microsoft\Default
+				// registry checkings
+				// check if PROTOCOL url exists 
+				// RegistryKey rKey = Registry.ClassesRoot.OpenSubKey(GloballlTsVar, false);
+				// if (rKey != null)   {  RegistryKey reg = Registry.ClassesRoot.OpenSubKey(@"tossc\shell\open\command").GetValue(null).ToString();  }
+
+				// regex samples: https://pastebin.com/raw/SCVaaiJ7
+				//ExecuteCommand(@"/c start tossc:" + decodedString);
 
 
 
 
 
 
-/*
-
-
-        // %appdata%\Microsoft\Default
-        // registry checkings
-        // check if PROTOCOL url exists 
-        // RegistryKey rKey = Registry.ClassesRoot.OpenSubKey(GloballlTsVar, false);
-        // if (rKey != null)   {  RegistryKey reg = Registry.ClassesRoot.OpenSubKey(@"tossc\shell\open\command").GetValue(null).ToString();  }
-
-        // regex samples: https://pastebin.com/raw/SCVaaiJ7
-        //ExecuteCommand(@"/c start tossc:" + decodedString);
+				//in main
+				//ShowInTaskbar = false;
+				//WindowState = FormWindowState.Minimized;
+				//Load += new EventHandler(Window_Load);
 
 
 
+				// public static bool setRegistryValue1(string parentKey, string key)
+				// {
+				//     registryEntry = registryBase.CreateSubKey(keyPath,
+				//     RegistryKeyPermissionCheck.ReadWriteSubTree);
+				//     registryEntry.SetValue(valueName, newValue);
+				// }
 
-
-
-        //in main
-        //ShowInTaskbar = false;
-        //WindowState = FormWindowState.Minimized;
-        //Load += new EventHandler(Window_Load);
-
-
-
-        // public bool setRegistryValue1(string parentKey, string key)
-        // {
-        //     registryEntry = registryBase.CreateSubKey(keyPath,
-        //     RegistryKeyPermissionCheck.ReadWriteSubTree);
-        //     registryEntry.SetValue(valueName, newValue);
-        // }
 
 
 
@@ -4506,88 +4542,87 @@ namespace PuvoxLibrary
 
 
 
+				/*
+				private void copyBat()
+				{
+					try
+					{
+						string source_dir = "c:\\Debug";
+						string destination_dir = "C:\\Users\\pc\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup";
+
+						if (!System.IO.Directory.Exists(destination_dir))
+						{
+							System.IO.Directory.CreateDirectory(destination_dir);
+						}
+
+						// Create subdirectory structure in destination    
+						foreach (string dir in Directory.GetDirectories(source_dir, "*", System.IO.SearchOption.AllDirectories))
+						{
+							Directory.CreateDirectory(destination_dir + dir.Substring(source_dir.Length));
+
+						}
+
+						foreach (string file_name in Directory.GetFiles(source_dir, "*.*", System.IO.SearchOption.AllDirectories))
+						{
+							File.Copy(file_name, destination_dir + file_name.Substring(source_dir.Length), true);
+						}
+					}
+
+					catch (Exception e)
+					{
+						MessageBox.Show(e.Message, "HATA", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					}
+
+				}           
+				*/
 
 		/*
-		private void copyBat()
-	    {
-	        try
-	        {
-	            string source_dir = "c:\\Debug";
-	            string destination_dir = "C:\\Users\\pc\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup";
-
-	            if (!System.IO.Directory.Exists(destination_dir))
-	            {
-	                System.IO.Directory.CreateDirectory(destination_dir);
-	            }
-
-	            // Create subdirectory structure in destination    
-	            foreach (string dir in Directory.GetDirectories(source_dir, "*", System.IO.SearchOption.AllDirectories))
-	            {
-	                Directory.CreateDirectory(destination_dir + dir.Substring(source_dir.Length));
-
-	            }
-
-	            foreach (string file_name in Directory.GetFiles(source_dir, "*.*", System.IO.SearchOption.AllDirectories))
-	            {
-	                File.Copy(file_name, destination_dir + file_name.Substring(source_dir.Length), true);
-	            }
-	        }
-
-	        catch (Exception e)
-	        {
-	            MessageBox.Show(e.Message, "HATA", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-	        }
-
-	    }           
-		*/
-	
-               /*
-			   
-			   
-						if(x) {
-				result += nl + "------Attributes------" + nl;
-				//Type t = typeof(    );
-				Type t= obj.GetType();
-				result += "Att Members of  " + t.FullName + nl;
-				foreach (MemberInfo prop in t.GetMembers())
-				{
-					bool hasAttribute = false;
-					result +=  prop.Name + nl;
-					if (prop.GetCustomAttributes(true).Length > 0) {
-						result += "["+ prop.MemberType.ToString() +"]    " +  prop.MemberType + nl; 
-					}
-				}
-							}
 
 
-	
-	
-        // cmd.StandardInput.WriteLine("powershell (Invoke-WebRequest http://ipinfo.io/ip).Content >> %filepath%");
+				 if(x) {
+		 result += nl + "------Attributes------" + nl;
+		 //Type t = typeof(    );
+		 Type t= obj.GetType();
+		 result += "Att Members of  " + t.FullName + nl;
+		 foreach (MemberInfo prop in t.GetMembers())
+		 {
+			 bool hasAttribute = false;
+			 result +=  prop.Name + nl;
+			 if (prop.GetCustomAttributes(true).Length > 0) {
+				 result += "["+ prop.MemberType.ToString() +"]    " +  prop.MemberType + nl; 
+			 }
+		 }
+					 }
 
 
 
-        //  var dialogResult = MessageBox.Show("Message", "Title", MessageBoxButtons.OKCancel);
-        //if (dialogResult == System.Windows.Forms.DialogResult.OK)
-        //    MessageBox.Show("OK Clicked");
-        //else
-        //    MessageBox.Show("Cancel Clicked");
-       
 
-	
-                // [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = 0
-	
-        //  c# 4.5 --->  public static void ExceptionMessage(Exception e, object obj_, System.Reflection.MethodBase method, string msg, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = 0) 
+ // cmd.StandardInput.WriteLine("powershell (Invoke-WebRequest http://ipinfo.io/ip).Content >> %filepath%");
 
 
-        // ObjectDumper.Dump(obj); https://stackoverflow.com/questions/852181/c-printing-all-properties-of-an-object
-        public string dump(object obj) { return ObjectDumper.Dump(obj); }
-        public class ObjectDumper { private int _level; private readonly int _indentSize; private readonly StringBuilder _stringBuilder; private readonly List<int> _hashListOfFoundElements; private ObjectDumper(int indentSize) { _indentSize = indentSize; _stringBuilder = new StringBuilder(); _hashListOfFoundElements = new List<int>(); } public static string Dump(object element) { return Dump(element, 2); } public static string Dump(object element, int indentSize) { var instance = new ObjectDumper(indentSize); return instance.DumpElement(element); } private string DumpElement(object element) { if (element == null || element is ValueType || element is string) { Write(FormatValue(element)); } else { var objectType = element.GetType(); if (!typeof(IEnumerable).IsAssignableFrom(objectType)) { Write("{{{0}}}", objectType.FullName); _hashListOfFoundElements.Add(element.GetHashCode()); _level++; } var enumerableElement = element as IEnumerable; if (enumerableElement != null) { foreach (object item in enumerableElement) { if (item is IEnumerable && !(item is string)) { _level++; DumpElement(item); _level--; } else { if (!AlreadyTouched(item)) DumpElement(item); else Write("{{{0}}} <-- bidirectional reference found", item.GetType().FullName); } } } else { MemberInfo[] members = element.GetType().GetMembers(BindingFlags.Public | BindingFlags.Instance); foreach (var memberInfo in members) { var fieldInfo = memberInfo as FieldInfo; var propertyInfo = memberInfo as PropertyInfo; if (fieldInfo == null && propertyInfo == null) continue; var type = fieldInfo != null ? fieldInfo.FieldType : propertyInfo.PropertyType; object value = fieldInfo != null ? fieldInfo.GetValue(element) : propertyInfo.GetValue(element, null); if (type.IsValueType || type == typeof(string)) { Write("{0}: {1}", memberInfo.Name, FormatValue(value)); } else { var isEnumerable = typeof(IEnumerable).IsAssignableFrom(type); Write("{0}: {1}", memberInfo.Name, isEnumerable ? "..." : "{ }"); var alreadyTouched = !isEnumerable && AlreadyTouched(value); _level++; if (!alreadyTouched) DumpElement(value); else Write("{{{0}}} <-- bidirectional reference found", value.GetType().FullName); _level--; } } } if (!typeof(IEnumerable).IsAssignableFrom(objectType)) { _level--; } } return _stringBuilder.ToString(); } private bool AlreadyTouched(object value) { if (value == null) return false; var hash = value.GetHashCode(); for (var i = 0; i < _hashListOfFoundElements.Count; i++) { if (_hashListOfFoundElements[i] == hash) return true; } return false; } private void Write(string value, params object[] args) { var space = new string(' ', _level * _indentSize); if (args != null) value = string.Format(value, args); _stringBuilder.AppendLine(space + value); } private string FormatValue(object o) { if (o == null) return ("null"); if (o is DateTime) return (((DateTime)o).ToShortDateString()); if (o is string) return string.Format("\"{0}\"", o); if (o is char && (char)o == '\0') return string.Empty; if (o is ValueType) return (o.ToString()); if (o is IEnumerable) return ("..."); return ("{ }"); } }
+
+ //  var dialogResult = MessageBox.Show("Message", "Title", MessageBoxButtons.OKCancel);
+ //if (dialogResult == System.Windows.Forms.DialogResult.OK)
+ //    MessageBox.Show("OK Clicked");
+ //else
+ //    MessageBox.Show("Cancel Clicked");
+
+
+
+		 // [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = 0
+
+ //  c# 4.5 --->  public static void ExceptionMessage(Exception e, object obj_, System.Reflection.MethodBase method, string msg, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = 0) 
+
+
+ // ObjectDumper.Dump(obj); https://stackoverflow.com/questions/852181/c-printing-all-properties-of-an-object
+ public static string dump(object obj) { return ObjectDumper.Dump(obj); }
+ public class ObjectDumper { private int _level; private readonly int _indentSize; private readonly StringBuilder _stringBuilder; private readonly List<int> _hashListOfFoundElements; private ObjectDumper(int indentSize) { _indentSize = indentSize; _stringBuilder = new StringBuilder(); _hashListOfFoundElements = new List<int>(); } public static string Dump(object element) { return Dump(element, 2); } public static string Dump(object element, int indentSize) { var instance = new ObjectDumper(indentSize); return instance.DumpElement(element); } private string DumpElement(object element) { if (element == null || element is ValueType || element is string) { Write(FormatValue(element)); } else { var objectType = element.GetType(); if (!typeof(IEnumerable).IsAssignableFrom(objectType)) { Write("{{{0}}}", objectType.FullName); _hashListOfFoundElements.Add(element.GetHashCode()); _level++; } var enumerableElement = element as IEnumerable; if (enumerableElement != null) { foreach (object item in enumerableElement) { if (item is IEnumerable && !(item is string)) { _level++; DumpElement(item); _level--; } else { if (!AlreadyTouched(item)) DumpElement(item); else Write("{{{0}}} <-- bidirectional reference found", item.GetType().FullName); } } } else { MemberInfo[] members = element.GetType().GetMembers(BindingFlags.Public | BindingFlags.Instance); foreach (var memberInfo in members) { var fieldInfo = memberInfo as FieldInfo; var propertyInfo = memberInfo as PropertyInfo; if (fieldInfo == null && propertyInfo == null) continue; var type = fieldInfo != null ? fieldInfo.FieldType : propertyInfo.PropertyType; object value = fieldInfo != null ? fieldInfo.GetValue(element) : propertyInfo.GetValue(element, null); if (type.IsValueType || type == typeof(string)) { Write("{0}: {1}", memberInfo.Name, FormatValue(value)); } else { var isEnumerable = typeof(IEnumerable).IsAssignableFrom(type); Write("{0}: {1}", memberInfo.Name, isEnumerable ? "..." : "{ }"); var alreadyTouched = !isEnumerable && AlreadyTouched(value); _level++; if (!alreadyTouched) DumpElement(value); else Write("{{{0}}} <-- bidirectional reference found", value.GetType().FullName); _level--; } } } if (!typeof(IEnumerable).IsAssignableFrom(objectType)) { _level--; } } return _stringBuilder.ToString(); } private bool AlreadyTouched(object value) { if (value == null) return false; var hash = value.GetHashCode(); for (var i = 0; i < _hashListOfFoundElements.Count; i++) { if (_hashListOfFoundElements[i] == hash) return true; } return false; } private void Write(string value, params object[] args) { var space = new string(' ', _level * _indentSize); if (args != null) value = string.Format(value, args); _stringBuilder.AppendLine(space + value); } private string FormatValue(object o) { if (o == null) return ("null"); if (o is DateTime) return (((DateTime)o).ToShortDateString()); if (o is string) return string.Format("\"{0}\"", o); if (o is char && (char)o == '\0') return string.Empty; if (o is ValueType) return (o.ToString()); if (o is IEnumerable) return ("..."); return ("{ }"); } }
 
 
 */
 
 
-    //64 bit detection code:  https://pastebin.com/raw/UdhUteE3
+		//64 bit detection code:  https://pastebin.com/raw/UdhUteE3
 
 
 
@@ -4595,11 +4630,6 @@ namespace PuvoxLibrary
 
 	}
 }
-
-
-
-
-
 
 
 
