@@ -20,16 +20,21 @@ using Google.Cloud.Speech.V1;
 using System.Threading;
 using Google.Protobuf;
 
-namespace ttLibrary
+namespace PuvoxLibrary
 {
 
     // here is the name:   (we can use: private NinjaTrader.NinjaScript.AddOns.mymethodstt my = new NinjaTrader.NinjaScript.AddOns.mymethodstt();
     public partial class GoogleSpeech_
     {
-        private SpeechTyperForWord.Form1 frm;
+        private static void m(object x) { PuvoxLibrary.Methods.m(x, true); }
+        void ex(Exception a) { PuvoxLibrary.Methods.ExceptionMessage(a, this, true); }
+        public static void cl(object obj) { Console.WriteLine(obj == null ? "null" : obj.ToString()); System.Diagnostics.Debug.WriteLine(obj == null ? "null" : obj.ToString()); }
+        private void d(string t) { System.Diagnostics.Debug.Write(t); }
+
+        private SpeechTyperForWord.Form_MAIN frm;
         PuvoxLibrary.Program program;
 
-        public GoogleSpeech_(SpeechTyperForWord.Form1 frm_, PuvoxLibrary.Program program_)
+        public GoogleSpeech_(SpeechTyperForWord.Form_MAIN frm_, PuvoxLibrary.Program program_)
         {
             frm = frm_;
             program = program_;
@@ -64,425 +69,6 @@ namespace ttLibrary
               };
             }
             return dict;
-
-        }
-
-
-        public string getIsoLangFromLang(string lang, int method)
-        {
-            string isolang = "en-US";
-            string containsWhat = method == 1 ? lang + "-" : "-" + lang;
-            foreach (KeyValuePair<string, string> each in GoogleVoiceLangs(1))
-            {
-                if (each.Key.Contains(containsWhat))
-                {
-                    isolang = each.Key;
-                    break;
-                }
-            }
-            return isolang;
-        }
-
-
-
-        public int HowManySeconds = 60; //max allowed 65 seconds
-
-        private void startRec()
-        {
-            isActive = true;
-            StreamingMicRecognizeAsync(HowManySeconds);
-        }
-
-        internal int secondsToWork = 0;
-        public async Task<object> StreamingMicRecognizeAsync()
-        {
-            return await StreamingMicRecognizeAsync(secondsToWork);
-        }
-
-        public bool isActive = false;
-        public NAudio.Wave.WaveInEvent waveIn;
-        public string phrase_final = "";
-        public string phrase_interim = "";
-        private Google.Protobuf.ByteString currentAudio;
-        private Google.Protobuf.ByteString accumulatedAudio = ByteString.Empty;
-        private Google.Protobuf.ByteString accumulatedAudio_temp = ByteString.Empty;
-        private List<Google.Protobuf.ByteString> accumulatedAudioAr = new List<Google.Protobuf.ByteString>();
-        public bool streamerSet = false;
-        private bool backFromRestart = false;
-        internal SpeechClient.StreamingRecognizeStream streamingCall;
-        public bool StoppButtoned = false;
-        private bool writeMore;
-        private Task prinResp;
-        private object writeLock;
-        private int seconds_from_streamstart;
-        public bool isStreamActive = false;
-        public bool MicSendsToStream = false;
-        //private static System.Threading.Timer aTimer;
-        private DateTime time_;
-
-        public bool visualizeOnRestart = false;
-
-        public async Task<object> StreamingMicRecognizeAsync(int seconds)
-        {
-            try
-            {
-                frm.GS_Record("initiated");
-                isStreamActive = false;
-                accumulatedAudioAr.Clear();
-                secondsToWork = seconds;
-
-                if (NAudio.Wave.WaveIn.DeviceCount < 1) { PuvoxLibrary.Methods.m("No microphone!"); return -1; }
-
-                await startRecFuncs();
-                if (!StoppButtoned)
-                {
-                    stopFuncs(false);
-                }
-
-                frm.GS_Record("finished");
-                return 0;
-            }
-            catch (Exception e)
-            {
-                PuvoxLibrary.Methods.m(e.Message);
-                return 0.0;
-            }
-        }
-
-
-        CancellationTokenSource source = new CancellationTokenSource();
-        CancellationToken token;
-
-        private async Task startRecFuncs()
-        {
-            try
-            {
-                await streamCallStart();
-
-                // Print responses as they arrive 
-                token = source.Token;
-                prinResp = Task.Run(startStreamReading, token);
-
-                if (!backFromRestart)
-                {
-                    // Read from the microphone and stream to API.
-                    await waveinRecord();
-                    frm.GS_Record("start");
-                }
-                else
-                {
-                    frm.GS_Record("restart");
-                }
-
-                await delayTillFinish();
-
-                await waitForPrintout();
-
-                if (isActive) // if not !StoppButtoned
-                {
-                    backFromRestart = true;
-                    await startRecFuncs();
-                }
-            }
-            catch (Exception e)
-            {
-                PuvoxLibrary.Methods.m(e.Message);
-                return;
-            }
-        }
-
-        private async Task streamCallStart()
-        {
-            try
-            {
-                time_ = DateTime.Now;
-                streamingCall = SpeechClient.Create().StreamingRecognize();
-                await streamingCall.WriteAsync(
-                    new StreamingRecognizeRequest()
-                    {
-                        StreamingConfig = new StreamingRecognitionConfig()
-                        {
-                            Config = new RecognitionConfig()
-                            {
-                                Encoding = RecognitionConfig.Types.AudioEncoding.Linear16,
-                                MaxAlternatives = 1,
-                                SampleRateHertz = 16000,
-                                LanguageCode = frm.selectedIsoLang, //"en-US" https://cloud.google.com/speech/docs/languages
-                        },
-                            InterimResults = true,
-                            SingleUtterance = false
-                        }
-                    }
-                );
-
-                //delay execution
-                seconds_from_streamstart = (int)((DateTime.Now - time_).TotalSeconds);
-                isStreamActive = true;
-                MicSendsToStream = true;
-            }
-            catch (Exception e)
-            {
-                PuvoxLibrary.Methods.m(e.Message);
-                return;
-            }
-        }
-
-
-        public float stability_coeff = 0;
-        public float confidence_coeff = 0;
-        public async Task startStreamReading()
-        { 
-            try
-            { 
-                while (isStreamActive && streamingCall!= null && await streamingCall.ResponseStream.MoveNext(default(CancellationToken)))  //if still active
-                {
-                    if (streamingCall != null)
-                    {
-                        foreach (var result in streamingCall.ResponseStream.Current.Results)
-                        {
-                            string phras = result.Alternatives[0].Transcript.ToString();
-                            phras = replacePunctuations(phras, frm.selectedLang);
-
-                            if (result.IsFinal)
-                            {
-                                if (result.Alternatives[0].Confidence > confidence_coeff)
-                                {
-                                    //if (my.countWords(phras) > 1)
-                                    phrase_final = phras;
-                                    frm.GS_Record("phrase_final");
-                                }
-                            }
-                            else
-                            {
-                                if (result.Stability > stability_coeff)
-                                {
-                                    phrase_interim = phras;
-                                    frm.GS_Record("phrase_interim");
-
-                                    if (phras == "stop stop")
-                                    {
-                                        // new Regex(@"\b" + regval + @"\b", RegexOptions.IgnoreCase).Replace(output, kv.Key); my.getRegistryValue(kv.Key + "_" + lang)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Grpc.Core.RpcException e)
-            {
-                //if 65 seconds passed, then restart
-                if (e.Status.StatusCode == Grpc.Core.StatusCode.OutOfRange)
-                {
-                    // Speech_Restart();
-                    isStreamActive = false;
-                }
-
-            } 
-        }
-
-
-        private async Task delayTillFinish()
-        {
-            if (isActive)
-            {
-                seconds_from_streamstart = (int)((DateTime.Now - time_).TotalSeconds);
-                if (seconds_from_streamstart < secondsToWork)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(1));
-                    await delayTillFinish();
-                }
-            }
-        }
-
-        private bool waitForPrintout_started = false;
-        public async Task waitForPrintout()
-        {
-            try
-            {
-                waitForPrintout_started = true;
-                MicSendsToStream = false;
-                await streamingCall.WriteCompleteAsync();
-                await prinResp; //wait before printout finished
-                isStreamActive = false;
-            }
-            catch (Exception e)
-            {
-                PuvoxLibrary.Methods.m(e.Message);
-                return;
-            }
-        }
-
-        public async Task exitPrintout()
-        {
-            try
-            {
-                
-                MicSendsToStream = false;
-                isActive = false;
-                isStreamActive = false;
-                if (!waitForPrintout_started)  streamingCall.WriteCompleteAsync();
-                //streamingCall = null;
-                if (source != null) source.Cancel();
-                if (waveIn != null) waveIn.StopRecording(); if (writeLock != null) lock (writeLock) writeMore = false;
-            }
-            catch (Exception e)
-            {
-                PuvoxLibrary.Methods.m(e.Message);
-                return;
-            }
-        }
-
-        public void stopFuncs(bool hardStop)
-        {
-            try
-            {
-                if (isActive || hardStop)
-                {
-                    //await Task.Delay(TimeSpan.FromSeconds(seconds));
-                    frm.GS_Record("stop");
-                    //shutdown
-                    isActive = false;
-                    isStreamActive = false; //needed, maybe stop buttoned
-                    if (waveIn != null) waveIn.StopRecording(); if (writeLock != null) lock (writeLock) writeMore = false;
-                    if (hardStop)
-                    {
-                        //waitForPrintout(); no need, cycle will stop itself in 1 seconds.
-                    }
-                    backFromRestart = false;
-                }
-            }
-            catch (Exception e)
-            {
-                PuvoxLibrary.Methods.m(e.Message);
-                return;
-            }
-        }
-
-
-
-
-        private byte[] wvBuffer = new byte[0];
-
-        private async Task waveinRecord()
-        {
-            try
-            {
-
-                writeLock = new object();
-                writeMore = true;
-
-                waveIn = new NAudio.Wave.WaveInEvent();
-                waveIn.DeviceNumber = 0;
-                waveIn.WaveFormat = new NAudio.Wave.WaveFormat(16000, 1);
-                waveIn.DataAvailable +=
-                    (object sender, NAudio.Wave.WaveInEventArgs args) =>
-                    {
-                        lock (writeLock)
-                        {
-                            if (!writeMore) return;
-                            try
-                            {
-                                if (isActive)
-                                {
-                                    currentAudio = Google.Protobuf.ByteString.CopyFrom(args.Buffer, 0, args.BytesRecorded);
-
-                                    if (MicSendsToStream)
-                                    {
-                                    // currentAudio.Concat(accumulatedAudio);
-                                    streamingCall.WriteAsync(
-                                            new StreamingRecognizeRequest()
-                                            {
-                                                AudioContent = currentAudio
-                                            }
-                                        ).Wait();
-                                        accumulatedAudio = Google.Protobuf.ByteString.Empty;
-                                    }
-                                    else
-                                    {
-                                        accumulatedAudio.Concat(currentAudio);
-                                    //wvBuffer = combineByteArrays(wvBuffer, args.Buffer); 
-                                }
-                                }
-                            /* 
-                            currentAudio = Google.Protobuf.ByteString.CopyFrom(args.Buffer, 0, args.BytesRecorded);
-
-                            if (!isStreamActive)
-                            {
-                                accumulatedAudio.Concat(currentAudio);
-                                //wvBuffer = combineByteArrays(wvBuffer, args.Buffer); 
-                            }
-                            else {
-                                currentAudio.Concat(accumulatedAudio);
-                                streamingCall.WriteAsync(
-                                    new StreamingRecognizeRequest()
-                                    {
-                                        AudioContent = currentAudio
-                                    }
-                                ).Wait();
-                                accumulatedAudio_temp = Google.Protobuf.ByteString.Empty;
-                            }
-                            */
-                            }
-                            catch (Exception e) { PuvoxLibrary.Methods.m(e.Message); }
-                        }
-                    };
-
-                waveIn.StartRecording();
-            }
-            catch (Exception e)
-            {
-                PuvoxLibrary.Methods.m(e.Message);
-                return;
-            }
-        }
-        //========================================
-
-
-
-
-
-        public void shutDown()
-        {
-            shutDown(false);
-        }
-
-        public void shutDown(bool hard)
-        {
-            if (hard) StoppButtoned = true;
-            isActive = false;
-        }
-
-
-
-        public void ButtonClicked_main()
-        {
-            isActive = !isActive;
-            Clicked_main(isActive);
-        }
-
-        private void d(string t) { System.Diagnostics.Debug.Write(t); }
-        public void Clicked_main(bool isStart)
-        {
-            if (isStart)
-            {
-                isActive = true;
-                StoppButtoned = false;
-                startRec();
-            }
-            else
-            {
-                isActive = false;
-                StoppButtoned = true;
-                stopFuncs(true);
-            }
-        }
-
-
-        //    System.Windows.Forms.Timer tmr = new System.Windows.Forms.Timer(); tmr.Interval = 100; tmr.Tick += timerHandler; tmr.Start();
-        private void timerHandler(object sender, EventArgs e)
-        {
-
         }
 
         public Dictionary<string, Dictionary<string, string>> punctuations = new Dictionary<string, Dictionary<string, string>>()
@@ -526,30 +112,40 @@ namespace ttLibrary
         };
 
 
+        public string getIsoLangFromLang(string lang, int method)
+        {
+            string isolang = "en-US";
+            string containsWhat = method == 1 ? lang + "-" : "-" + lang;
+            foreach (KeyValuePair<string, string> each in GoogleVoiceLangs(1))
+            {
+                if (each.Key.Contains(containsWhat))
+                {
+                    isolang = each.Key;
+                    break;
+                }
+            }
+            return isolang;
+        }
 
 
 
 
-
-
-
-        public Dictionary<string, string>  replacements = new Dictionary<string, string> { };
+        public Dictionary<string, string> replacements = new Dictionary<string, string> { };
         public Action<Dictionary<string, string>> replacements_;
 
         internal string replacePunctuations(string text, string lang)
         {
             string output = text;
 
-            /*
-            foreach (KeyValuePair<string, string> kv in punctuations)
-            {
-                string regval = my.getRegistryValue(kv.Key + "_" + lang);
-                if (!String.IsNullOrEmpty(regval))
-                {
-                    output = new Regex(@"\b" + regval + @"\b", RegexOptions.IgnoreCase).Replace(output, kv.Key);
-                }
-            }
-            */
+
+            //foreach (KeyValuePair<string, string> kv in punctuations)
+            //{
+            //    string regval = my.getRegistryValue(kv.Key + "_" + lang);
+            //    if (!String.IsNullOrEmpty(regval))
+            //    {
+            //        output = new Regex(@"\b" + regval + @"\b", RegexOptions.IgnoreCase).Replace(output, kv.Key);
+            //    }
+            //} 
             foreach (KeyValuePair<string, string> kv in replacements)
             {
                 output = new Regex(@"\b" + kv.Key + @"\b", RegexOptions.IgnoreCase).Replace(output, kv.Value);
@@ -559,58 +155,150 @@ namespace ttLibrary
         }
 
 
-        internal byte[] Combine_bytestring(params byte[][] arrays)
+    }
+
+
+
+
+
+
+    public partial class GoogleSpeech_
+    {
+        public bool isRecording = false;
+        CancellationTokenSource waitingTask;
+
+        public void startFuncs(int seconds, string languageCode)
+        {
+            isRecording = true;
+            waitingTask = new CancellationTokenSource();
+            StreamingMicRecognizeAsync( seconds, languageCode, waitingTask.Token);
+        }
+
+        public void stopFuncs()
         {
             try
             {
-                byte[] rv = new byte[arrays.Sum(a => a.Length)];
-                int offset = 0;
-                foreach (byte[] array in arrays)
+                if (!isRecording) return;
+                if (waitingTask != null) waitingTask.Cancel();
+                isRecording = false;
+                frm.IsActive = false;
+            }
+            catch (Exception e)
+            {
+                ex(e);
+                return;
+            }
+        }
+
+
+        public float stability_coeff = 0;
+        public float confidence_coeff = 0;
+
+        public StreamingRecognizeRequest streamingRecognizeRequest;
+        // https://cloud.google.com/speech-to-text/docs/streaming-recognize?hl=ru
+        async Task<object> StreamingMicRecognizeAsync(int seconds, string languageCode, CancellationToken waitingTask)
+        {
+            try
+            {
+                var speech = SpeechClient.Create();
+                var streamingCall = speech.StreamingRecognize();
+                // Write the initial request with the config.
+                await streamingCall.WriteAsync(
+                    streamingRecognizeRequest = new StreamingRecognizeRequest()
+                    {
+                        StreamingConfig = new StreamingRecognitionConfig()
+                        {
+                            // https://googleapis.github.io/google-cloud-dotnet/docs/Google.Cloud.Speech.V1/api/Google.Cloud.Speech.V1.StreamingRecognitionConfig.html
+                            Config = new RecognitionConfig()
+                            {
+                                Encoding = RecognitionConfig.Types.AudioEncoding.Linear16,
+                                SampleRateHertz = 16000,
+                                LanguageCode = languageCode, // LanguageCodes.English
+                                MaxAlternatives = 1,
+                            },
+                            InterimResults = true,
+                            SingleUtterance = false
+                        }
+                    });
+                // Print responses as they arrive.
+                Task printResponses = Task.Run(async () =>
                 {
-                    System.Buffer.BlockCopy(array, 0, rv, offset, array.Length);
-                    offset += array.Length;
+                    while (await streamingCall.ResponseStream.MoveNext(default(CancellationToken)))
+                    {
+                        if (!isRecording) break;
+
+                        foreach (var result in streamingCall.ResponseStream.Current.Results)
+                        { 
+                            //foreach (var alternative in result.Alternatives)   Debug.WriteLine("d:" + alternative.Transcript);   
+                            string phras = result.Alternatives[0].Transcript.ToString();
+                            phras = replacePunctuations(phras, frm.selectedLang);
+
+                            if (result.IsFinal)
+                            {
+                                if (result.Alternatives[0].Confidence > confidence_coeff)
+                                {
+                                    //if (my.countWords(phras) > 1)
+                                    frm.RecordingVisuals("phrase_final", phras);
+                                }
+                            }
+                            else
+                            {
+                                if (result.Stability > stability_coeff)
+                                {
+                                    frm.RecordingVisuals("phrase_interim", phras); 
+                                }
+                            }
+
+                        }
+                    }
+                });
+                // Read from the microphone and stream to API.
+                object writeLock = new object();
+                bool writeMore = true;
+                var waveIn = new NAudio.Wave.WaveInEvent();
+                waveIn.DeviceNumber = 0;
+                waveIn.WaveFormat = new NAudio.Wave.WaveFormat(16000, 1);
+                waveIn.DataAvailable +=
+                    (object sender, NAudio.Wave.WaveInEventArgs args) =>
+                    {
+                        lock (writeLock)
+                        {
+                            if (!writeMore) return;
+
+                            if (isRecording)
+                            {
+                                streamingCall.WriteAsync(
+                                new StreamingRecognizeRequest()
+                                {
+                                    AudioContent = Google.Protobuf.ByteString
+                                        .CopyFrom(args.Buffer, 0, args.BytesRecorded)
+                                }).Wait();
+                            }
+                        }
+                    };
+                waveIn.StartRecording();
+                await Task.Delay(TimeSpan.FromSeconds(seconds), waitingTask);
+                // Stop recording and shut down.
+                waveIn.StopRecording();
+                lock (writeLock)
+                {
+                    writeMore = false;
                 }
-                return rv;
+                await streamingCall.WriteCompleteAsync();
+                await printResponses;
+            }
+            catch (TaskCanceledException taskCanceled)
+            {
+                Debug.WriteLine(taskCanceled.Message);
             }
             catch (Exception e)
             {
-                PuvoxLibrary.Methods.m(e.Message);
-                return new byte[0];
+                m(e);
+                stopFuncs();
             }
+            return 0;
         }
 
-
-        internal byte[] addByteToArray(byte[] bArray, byte newByte)
-        {
-            try
-            {
-                byte[] newArray = new byte[bArray.Length + 1];
-                bArray.CopyTo(newArray, 0);
-                newArray[bArray.Length - 1] = newByte;
-                return newArray;
-            }
-            catch (Exception e)
-            {
-                PuvoxLibrary.Methods.m(e.Message);
-                return new byte[0];
-            }
-        }
-
-        internal byte[] combineByteArrays(byte[] ba1, byte[] ba2)
-        {
-            try
-            {
-                byte[] rv = new byte[ba1.Length + ba2.Length];
-                System.Buffer.BlockCopy(ba1, 0, rv, 0, ba1.Length);
-                System.Buffer.BlockCopy(ba2, 0, rv, ba1.Length, ba2.Length);
-                return rv;
-            }
-            catch (Exception e)
-            {
-                PuvoxLibrary.Methods.m(e.Message);
-                return new byte[0];
-            }
-        }
          
 
 

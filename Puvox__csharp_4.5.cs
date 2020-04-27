@@ -120,7 +120,7 @@ namespace PuvoxLibrary
 
 
 
-        public Color color_from_hex(string hex_str)
+        public static Color color_from_hex(string hex_str)
         {
             try
             {
@@ -133,8 +133,8 @@ namespace PuvoxLibrary
             }
         }
 
-        public bool blinkActive = false;
-        public async void Blink_start(System.Windows.Forms.Control ctrl, Color c1, Color c2, short CycleTime_ms, bool BkClr)
+        public static bool blinkActive = false;
+        public static async void Blink_start(System.Windows.Forms.Control ctrl, Color c1, Color c2, short CycleTime_ms, bool BkClr)
         {
             try
             {
@@ -162,10 +162,13 @@ namespace PuvoxLibrary
 
         }
 
-        public void Blink_stop(System.Windows.Forms.Control ctrl)
+        public static void Blink_stop(System.Windows.Forms.Control ctrl)
         {
             blinkActive = false;
         }
+
+
+
 
         //  =============== Datetime Extensions   ================//
         // 

@@ -18,17 +18,24 @@ using System.Threading.Tasks;
 using System.Security.Cryptography;
 using Google.Cloud.Translation.V2;
 
-namespace ttLibrary
+namespace PuvoxLibrary
 {
 
     public partial class GoogleTranslate_ 
-    { 
-		
+    {
+        private void m(dynamic x) { System.Windows.Forms.MessageBox.Show(x); }
         TranslationClient gTranslateClient;
 
         public GoogleTranslate_(string gsApiKey)
         {
-            gTranslateClient = TranslationClient.Create();
+            try
+            {
+                gTranslateClient = TranslationClient.Create();
+            }
+            catch(Exception e)
+            {
+                m(e);
+            }
         }
 
         public string GTranslate(string text, string targetLanguageCode, string sourceLanguageCode)

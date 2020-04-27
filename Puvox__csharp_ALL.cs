@@ -49,155 +49,6 @@ using SharpDX.Direct2D1;
 using SharpDX.DirectWrite;
 */
 
-#region Program properties
-namespace PuvoxLibrary
-{ 
-	public class Program
-	{
-		protected string baseCompanyName;
-		protected string baseDomain;
-		protected string Name;
-		protected string Slug;
-		protected double Version;
-		protected string Language;
-		protected string BaseProductUrl;
-		protected string RegRootOfThisProg;
-		protected string responseUrl;
-		protected string baseResponsePath;
-		protected string baseContactPath;
-		protected string contactUrl;
-		protected bool initialized;
-		
-		public void defaultInit(string companyName_, string domain_, string title, string slug, double version, string language, string productUrl)
-		{
-			baseCompanyName = companyName_;
-			baseDomain = domain_;
-			Name = title;
-			Slug = slug;
-			Version = version;
-			Language = language;
-			BaseProductUrl = productUrl;
-			RegRootOfThisProg = string.Concat(new string[]{"SOFTWARE\\",baseCompanyName,"\\",	Slug,"\\"});
-			responseUrl = ApiURL + "&action=check&licensekey=" + licensekeyGet();
-			contactUrl = baseDomain + baseContactPath;
-			initialized = true;
-		}
- 
-		public string ApiURL
-		{
-			get
-			{
-				return string.Concat(new object[]{ baseDomain,	baseResponsePath, "program=", PuvoxLibrary.Methods.urlEncode(Slug), "&version=", Version	});
-			}
-		}
-			
-			
-		
-		public bool licensekeySet(string key)
-		{
-			PuvoxLibrary.Methods.setRegistryValue("licensekey", key);
-			return true;
-		}
-
-		
-		public string licensekeyGet()
-		{
-			return PuvoxLibrary.Methods.getSetRegistryValue("licensekey", "demo_" + PuvoxLibrary.Methods.RandomString(32));
-		}
-
-		public bool isDemo { get { return licensekeyGet().Contains("demo_"); } }
-		
-		public Dictionary<string,string> mainResponse;
-		public Dictionary<string,string> MainResponse
-		{
-			get
-			{
-				getResponseData(false, 3);
-				return mainResponse;
-			}
-			set
-			{
-				mainResponse = value;
-			}
-		}
-
-
-		public bool getResponseData(bool forceNew, int cachedMinutes_)
-		{
-			bool flag = false;
-			if (mainResponse == null)
-			{
-				flag = true;
-			}
-			else if (forceNew)
-			{
-				flag = true;
-			}
-			if (flag)
-			{
-				string text;
-				if (DateTime.Now.Subtract(TimeSpan.FromMinutes((double)cachedMinutes_)) < DateTime.Parse( PuvoxLibrary.Methods.getSetRegistryValue("last_resp_time", DateTime.Now.ToString())))
-				{
-					text = PuvoxLibrary.Methods.getRegistryValue("last_resp_data");
-				}
-				else
-				{
-					text = PuvoxLibrary.Methods.urlRead(responseUrl);
-					PuvoxLibrary.Methods.setRegistryValue("last_resp_time", DateTime.Now.ToString());
-					PuvoxLibrary.Methods.setRegistryValue("last_resp_data", text);
-				}
-				if (text == "-1")
-				{
-					return false;
-				}
-				mainResponse_string = text;
-				Dictionary<string, string> dictionary = PuvoxLibrary.Methods.deserialize(text);
-				string str = (dictionary["enchint"] == "") ? dictionary["data"] : PuvoxLibrary.Methods.DecryptString(dictionary["data"], Slug + dictionary["enchint"] + Version.ToString());
-				mainResponse = PuvoxLibrary.Methods.deserialize(str);
-			}
-			return true;
-		}
-		string mainResponse_string;
-		
-		internal bool licenseAllowed()
-		{
-			return MainResponse["status"] == "200";
-		}
-
-		private bool isDevelopment { get { return PuvoxLibrary.Methods.IsDeveloperMachine(); } }
-	
-		public bool updateAvailable()
-		{
-			bool result;
-			try
-			{
-				result = (mainResponse["version"].ToString() != Version.ToString());
-			}
-			catch (Exception)
-			{
-				result = false;
-			}
-			return result;
-		}
-
-
-
-
-
-		public string regBase = "SOFTWARE\\MyCompany\\";
-		public string getRegistryValue(string key)
-		{
-			return PuvoxLibrary.Methods.getRegistryValue(regBase + "\\" + key);
-		}
-		public bool setRegistryValue(string key)
-		{
-			return PuvoxLibrary.Methods.setRegistryValue(regBase + "\\" + key);
-		}
-	}
-}
-#endregion
-
-
 
 
 
@@ -206,45 +57,7 @@ namespace PuvoxLibrary
 namespace PuvoxLibrary
 {
 	public partial class Methods
-	{
-		private string ProgramName_ = "";
-		public static string ProgramName { get { if (ProgramName_ == "") { m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); } return ProgramName_; } set { ProgramName_ = value; } }
-
-		public static string Language;
-		public static string Name;
-		public static string Slug;
-		public static double Version;
-		public static string BaseProductUrl;
-		public static string responseUrl;
-		public static string RegRootOfThisProg;
-		public static string infoUrl;
-		public static string contactUrl;
-		public static string AppNameRegex = "(XYZXYZ)";
-		public static bool isDevelopment;
-		public static string baseDomain = "https://puvox.software/";
-		public static string baseResponsePath = "program-responses.php?";
-		public static string baseCompanyName = "Puvox";
-		public static string baseContactPath = "contact";
-		public static string developerMachineString = "puvox_development_machine";
-		public static bool Development_Mode;
-		public static bool initialized;
-		public static Dictionary<string, string> TheNames;
-		public static string mainResponse_string;
-		private Dictionary<string, string> mainResponse;
-		public static bool debug_show_response;
-		public static string mainDrive = Path.GetPathRoot(Environment.SystemDirectory);
-
-		private Dictionary<string, string> symbols = new Dictionary<string, string>
-		{
-			{ "checkmark", "?" },
-			{ "checkmark2", "\ud83d\uddf9" }
-		};
-
-
-
-
-
-
+	{     
 		#region DateTime
 
 		//  0940 type time-ints
@@ -261,7 +74,11 @@ namespace PuvoxLibrary
 			return num >= start && num < end;
 		}
 
+		public static string mainDrive { get { return Path.GetPathRoot(Environment.SystemDirectory); } }
+
+
 		#region Demo(Trial) period checks
+		public static bool initialized;
 		public static bool workTillDate(string program_slug, string dateTill)
 		{
 			bool result;
@@ -270,9 +87,9 @@ namespace PuvoxLibrary
 				if (dateTill != "" && DateTime.Now > DateTime.ParseExact(dateTill, "yyyy-MM-dd", CultureInfo.InvariantCulture))
 				{
 					bool flag = initialized;
-					if (mainResponse.ContainsKey("error_message") || mainResponse["error_message"] != "")
+					//if (mainResponse.ContainsKey("error_message") || mainResponse["error_message"] != "")
 					{
-						Methods.m(mainResponse["error_message"]);
+					//	m(mainResponse["error_message"]);
 						return false;
 					}
 				}
@@ -286,8 +103,19 @@ namespace PuvoxLibrary
 		}
 
 
-		private bool demoPeriodGone_shown;
-		private bool demoPeriodGone_disallow;
+		public static string AppNameRegex = "(XYZXYZ)";
+		public static string developerMachineString = "puvox_development_machine";
+
+
+		private Dictionary<string, string> symbols = new Dictionary<string, string>
+		{
+			{ "checkmark", "?" },
+			{ "checkmark2", "\ud83d\uddf9" }
+		};
+
+
+		private static bool demoPeriodGone_shown;
+		private static bool demoPeriodGone_disallow;
 		// "yyyy-MM-dd"
 		public static bool demoPeriodGone(string message, string dateTill)
 		{
@@ -342,19 +170,66 @@ namespace PuvoxLibrary
 		}
 
 
-		public static int DateToTime(DateTime dt) { return dt.Hour * 100 + dt.Minute; }
-		public static DateTime ToDateTime(string s) { return ToDateTime(s, "ddMMyyyy", ""); }
-		public static DateTime ToDateTime(string s, string format) { return ToDateTime(s, format, ""); }
-		public static DateTime ToDateTime(string s, string format, string cultureString)
-		{    //tr-TR
-			CultureInfo _culture = (cultureString == "") ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(cultureString);
+		 
+		private static string ProgramName_ = "";
+		public static string ProgramName { get { if (ProgramName_ == "") { m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); } return ProgramName_; } set { ProgramName_ = value; } }
+
+
+		//  =============== Datetime Extensions   ================//
+		// 
+		/*
+                static void Main(string[] args) {
+                    var mydate = "29021996";
+                    var date = mydate.ToDateTime(format: "ddMMyyyy"); // {29.02.1996 00:00:00}
+                    mydate = "2016 3";      		 date = mydate.ToDateTime("yyyy M"); // {01.03.2016 00:00:00}
+                    mydate = "2016 12";     		 date = mydate.ToDateTime("yyyy d"); // {12.01.2016 00:00:00}
+                    mydate = "2016/31/05 13:33";     date = mydate.ToDateTime("yyyy/d/M HH:mm"); // {31.05.2016 13:33:00}
+                    mydate = "2016/31 Ocak";         date = mydate.ToDateTime("yyyy/d MMMM"); // {31.01.2016 00:00:00}
+                    mydate = "2016/31 January";      date = mydate.ToDateTime("yyyy/d MMMM", cultureString: "en-US");     // {31.01.2016 00:00:00}
+                    mydate = "11/?????/1437";        date = mydate.ToDateTime( culture: CultureInfo.GetCultureInfo("ar-SA"),  format: "dd/MMMM/yyyy");   // Weird :) I supposed dd/yyyy/MMMM but that did not work !?$^&*
+                    System.Diagnostics.Debug.Assert(  date.Equals(new DateTime(year: 2016, month: 5, day: 18)));
+                }
+
+
+                        foreach (TimeZoneInfo timeZone in TimeZoneInfo.GetSystemTimeZones())	Print(  "'"+ timeZone.DisplayName + "' => '"+ timeZone.Id + "'" );
+        */
+		public static DateTime ToDateTime(string s)
+		{
 			try
 			{
+				return ToDateTime(s, "ddMMyyyy", "");
+			}
+			catch (Exception e)
+			{
+				m(e.Message);
+				return DateTime.MinValue;
+			}
+		}
+		public static DateTime ToDateTime(string s, string format)
+		{
+			try
+			{
+				return ToDateTime(s, format, "");
+			}
+			catch (Exception e)
+			{
+				m(e.Message);
+				return DateTime.MinValue;
+			}
+		}
+		public static DateTime ToDateTime(string s, string format, string cultureString)
+		{
+			try
+			{  //tr-TR
+				CultureInfo _culture = (cultureString == "") ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(cultureString);
 				return DateTime.ParseExact(s: s, format: format, provider: _culture);
 			}
 			catch (FormatException) { throw; }
 			catch (Exception) { throw; } // Given Culture is not supported culture
 		}
+
+
+		public static int DateToTime(DateTime dt) { return dt.Hour * 100 + dt.Minute; }
 
 
 		//i.e.    IsTimePeriod("start"
@@ -439,38 +314,38 @@ namespace PuvoxLibrary
 			if (text == "") return "";
 
 			// ===== long / short
-			else if (text == "LONG") return "SHORT";
-			else if (text == "SHORT") return "LONG";
-			else if (text == "Long") return "Short";
-			else if (text == "Short") return "Long";
-			else if (text == "long") return "short";
-			else if (text == "short") return "long";
+			else if(text=="LONG")	return "SHORT";
+			else if(text=="SHORT")	return "LONG";
+			else if(text=="Long")	return "Short";
+			else if(text=="Short")	return "Long";
+			else if(text=="long")	return "short";
+			else if(text=="short")	return "long";
 			//
-			else if (text == "L") return "S";
-			else if (text == "S") return "L";
-			else if (text == "l") return "s";
-			else if (text == "s") return "l";
-
+			else if(text=="L")		return "S";
+			else if(text=="S")		return "L";
+			else if(text=="l")		return "s";
+			else if(text=="s")		return "l";
+			
 			// ===== buy / sell
-			else if (text == "BUY") return "SELL";
-			else if (text == "SELL") return "BUY";
-			else if (text == "Buy") return "Sell";
-			else if (text == "Sell") return "Buy";
-			else if (text == "buy") return "sell";
-			else if (text == "sell") return "buy";
+			else if(text=="BUY")	return "SELL";
+			else if(text=="SELL")	return "BUY";
+			else if(text=="Buy")	return "Sell";
+			else if(text=="Sell")	return "Buy";
+			else if(text=="buy")	return "sell";
+			else if(text=="sell")	return "buy";
 			//
-			else if (text == "B") return "S";
-			else if (text == "S") return "B";
-			else if (text == "b") return "s";
-			else if (text == "s") return "b";
-
+			else if(text=="B")		return "S";
+			else if(text=="S")		return "B";
+			else if(text=="b")		return "s";
+			else if(text=="s")		return "b";
+			
 			// ===== above / below
-			else if (text == "ABOVE") return "BELOW";
-			else if (text == "BELOW") return "ABOVE";
-			else if (text == "Above") return "Below";
-			else if (text == "Below") return "Above";
-			else if (text == "above") return "below";
-			else if (text == "below") return "above";
+			else if(text=="ABOVE")	return "BELOW";
+			else if(text=="BELOW")	return "ABOVE";
+			else if(text=="Above")	return "Below";
+			else if(text=="Below")	return "Above";
+			else if(text=="above")	return "below";
+			else if(text=="below")	return "above";
 
 			return "";
 		}
@@ -503,7 +378,7 @@ namespace PuvoxLibrary
 
 				if (myAttribute != null)
 				{
-					property.SetValue(this, myAttribute.Value);
+					//property.SetValue(this, myAttribute.Value);
 				}
 			}
 		}
@@ -755,11 +630,12 @@ namespace PuvoxLibrary
 
 
 		//return ( NetFrameworkVersion() <= 3.5 ?  deserializer_35(str)  : deserializer(str) );
-		public static Dictionary<string, string> deserialize(string str)
+		public static Dictionary<string, object> deserialize(string str)
 		{
 			return deserializer_35(str);
 		}
 
+		/*
 		public static bool deserialize(string str, ref Dictionary<string, string> dict)
 		{
 			Dictionary<string, string> dictionary = deserializer_35(str);
@@ -770,19 +646,28 @@ namespace PuvoxLibrary
 			}
 			return false;
 		}
-
-		public static Dictionary<string, string> deserializer_35(string str)
+		*/
+		public static Dictionary<string, object> deserializer_35(string str)
 		{
-			Dictionary<string, string> result;
 			try
 			{
-				result = ConvertToStringDictionary(Methods.JsonMaker.ParseJSON(str));
+				return Methods.JsonMaker.ParseJSON(str); // ConvertToStringDictionary(Methods.JsonMaker.ParseJSON(str));
 			}
 			catch (Exception)
 			{
-				result = null;
+				return null;
 			}
-			return result;
+		}
+		public static Dictionary<string, string> deserializer_35_stringed(string str)
+		{
+			try
+			{
+				return ConvertToStringDictionary(Methods.JsonMaker.ParseJSON(str));
+			}
+			catch (Exception)
+			{
+				return null;
+			}
 			//Dictionary<string, string> new_dict = new Dictionary<string, string>();
 			//foreach (KeyValuePair<string, object> eachObj in dict)
 			// new_dict[eachObj.Key] = eachObj.Value.ToString();
@@ -814,25 +699,32 @@ namespace PuvoxLibrary
 
 		public static Dictionary<string, string> xml_to_dictionary(string xml_data)
 		{
-
-			//xml_data = "<data><test>foo</test><test>foobbbbb</test><bar>123</bar><username>foobar</username></data>";
-
-			XDocument doc = XDocument.Parse(xml_data);
-			Dictionary<string, string> dataDictionary = new Dictionary<string, string>();
-
-			foreach (XElement element in doc.Descendants().Where(p => p.HasElements == false))
+			try
 			{
-				int keyInt = 0;
-				string keyName = element.Name.LocalName;
+				//xml_data = "<data><test>foo</test><test>foobbbbb</test><bar>123</bar><username>foobar</username></data>";
 
-				while (dataDictionary.ContainsKey(keyName))
+				XDocument doc = XDocument.Parse(xml_data);
+				Dictionary<string, string> dataDictionary = new Dictionary<string, string>();
+
+				foreach (XElement element in doc.Descendants().Where(p => p.HasElements == false))
 				{
-					keyName = element.Name.LocalName + "_" + keyInt++;
-				}
+					int keyInt = 0;
+					string keyName = element.Name.LocalName;
 
-				dataDictionary.Add(keyName, element.Value);
+					while (dataDictionary.ContainsKey(keyName))
+					{
+						keyName = element.Name.LocalName + "_" + keyInt++;
+					}
+
+					dataDictionary.Add(keyName, element.Value);
+				}
+				return dataDictionary;
 			}
-			return dataDictionary;
+			catch (Exception e)
+			{
+				m(e.Message);
+				return new Dictionary<string, string>();
+			}
 		}
 
 		#endregion
@@ -842,6 +734,270 @@ namespace PuvoxLibrary
 
 
 
+
+		public static Color color_from_hex(string hex_str)
+		{
+			return (Color)System.Drawing.ColorTranslator.FromHtml(hex_str);
+		}
+
+		//Color.FromArgb(newAlpha, mycolor);   Color.FromArgb(A, color.R, color.G, color.B);
+		public static System.Windows.Forms.Timer BlinkTimer;
+		public static Color initialColor;
+		public static void blink(bool startOrStop, System.Windows.Forms.Control ctrl, Color c1, Color c2, int cycleLength_MS, bool BkClr)
+		{
+			if (ctrl.InvokeRequired)
+			{
+				ctrl.Invoke(new System.Action(() => blink(startOrStop, ctrl, c1, c2, cycleLength_MS, BkClr)));
+			}
+			else
+			{
+				initialColor = BkClr ? ctrl.BackColor : ctrl.ForeColor;
+
+				//is called in new thread in eventhandler
+				void timer_Tick(object sender, EventArgs e)
+				{
+					if (BkClr)
+					{
+						var color = ctrl.BackColor != c1 ? c1 : c2;
+						for(var i=0; i<10; i++)
+						{
+							Thread.Sleep(cycleLength_MS/10);
+							ctrl.BackColor = Color.FromArgb((255/10)*i, color.R, color.G, color.B);
+						}
+						ctrl.BackColor = color;
+					}
+					else
+					{
+						var color = ctrl.ForeColor != c1 ? c1 : c2; 
+						ctrl.ForeColor = color;
+					}
+				}
+
+				if (startOrStop)
+				{
+					if (BlinkTimer == null)
+					{
+						BlinkTimer = new System.Windows.Forms.Timer();
+						BlinkTimer.Interval = cycleLength_MS;
+						BlinkTimer.Enabled = false;
+						BlinkTimer.Start();
+						BlinkTimer.Tick += new EventHandler(timer_Tick);
+					}
+				}
+				else
+				{
+					if (BkClr) ctrl.BackColor = initialColor; else ctrl.ForeColor = initialColor;
+					BlinkTimer.Stop();
+					BlinkTimer.Tick -= timer_Tick;
+					BlinkTimer = null;
+				}
+			}
+		}
+
+		/*
+				public static bool blinkActive = false;
+				public static async void Blink_start(System.Windows.Forms.Control ctrl, Color c1, Color c2, short CycleTime_ms, bool BkClr, bool StartOrStop)
+				{
+					try
+					{
+						if(StartOrStop)
+						{
+							blinkActive = true;
+							var sw = new Stopwatch(); sw.Start();
+							short halfCycle = (short)Math.Round(CycleTime_ms * 0.5);
+							while (blinkActive)
+							{
+								await System.Threading.Tasks.Task.Delay(100);
+								var n = sw.ElapsedMilliseconds % CycleTime_ms;
+								var per = (double)Math.Abs(n - halfCycle) / halfCycle;
+								var red = (short)Math.Round((c2.R - c1.R) * per) + c1.R;
+								var grn = (short)Math.Round((c2.G - c1.G) * per) + c1.G;
+								var blw = (short)Math.Round((c2.B - c1.B) * per) + c1.B;
+								var clr = Color.FromArgb(red, grn, blw);
+								if (BkClr) ctrl.BackColor = clr; else ctrl.ForeColor = clr;
+							}
+							ctrl.BackColor = Color.Transparent;
+						}
+						else
+						{
+							blinkActive = false;
+						}
+
+					}
+					catch (Exception e)
+					{
+						m(e.Message);
+						return;
+					}
+
+				}
+				*/
+
+
+
+
+
+		/*
+	public  bool propertyExists(object obj_, string propName){
+		PropertyInfo propInfo = 
+			obj_.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public)
+					.FirstOrDefault(x => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
+		if(propInfo != null)
+		{
+			return true;
+			//propInfo.SetValue(table, DateTime.Now);
+		} 
+		return false;
+	}
+
+	public static bool propertyExists_static(object obj_, string propName){
+		PropertyInfo propInfo = 
+			obj_.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public)
+					.FirstOrDefault(x => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
+		if(propInfo != null)
+		{
+			return true;
+			//propInfo.SetValue(table, DateTime.Now);
+		} 
+		return false;
+	}
+
+	public static bool fieldExists(object obj_, string fieldName){
+		FieldInfo fieldInfo 
+			= obj_.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public)
+					.FirstOrDefault(x => x.Name.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+		if(fieldInfo != null)
+		{
+			return true;
+			//propInfo.SetValue(table, DateTime.Now);
+		}
+		return false;
+	}
+
+
+
+	public bool objectContains(object obj_, string propName){
+		 return objectContains_static( obj_,  propName);
+	}
+
+	public static bool objectContains_static(object obj_, string propName){ 
+		return ( propertyExists_static( obj_,  propName)  || fieldExists( obj_,  propName) ) ;
+	}
+
+
+
+
+	public dynamic propertyGet( object obj_, string propName, string type){
+		return propertyGet_static(  obj_,  propName, type);
+	}
+
+
+	public static dynamic propertyGet_static( object obj_, string propName){
+		return propertyGet_static(  obj_,  propName,  "");
+	}
+
+	public static dynamic propertyGet_static( object obj_, string propName, string type){
+
+		var propInfo =  obj_.GetType().GetProperty(propName);
+		if(propInfo != null)
+		{ 
+			if( type == "string" ){
+				return  ((string) propInfo.GetValue(obj_, null));
+			}
+			else if( type == "bool"){
+				return  ((bool) propInfo.GetValue(obj_, null));
+			}
+			else if( type == "dictionary_string_string"){
+				return  ((Dictionary<string,string>) propInfo.GetValue(obj_, null));
+			}
+			return (dynamic) propInfo.GetValue(obj_, null)  ;
+		}
+
+		var fieldInfo =  obj_.GetType().GetField(propName);
+		if(fieldInfo != null)
+		{ 
+			if( type == "string"){
+				return  ((string) fieldInfo.GetValue(obj_));
+			}
+			else if( type == "bool"){
+				return  ((bool) fieldInfo.GetValue(obj_));
+			}
+			else if( type == "dictionary_string_string"){
+				return  ((Dictionary<string,string>) fieldInfo.GetValue(obj_));
+			}
+			return ((dynamic) propInfo.GetValue(obj_) );
+		}
+
+		return "";
+	} 
+
+	public static bool propertySet_static(object obj_, string propName, dynamic value){
+
+		PropertyInfo propInfo 
+					= obj_.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public)
+					.FirstOrDefault(x => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
+		if(propInfo != null)
+		{
+			propInfo.SetValue(obj_, value);
+			return true;
+		}
+
+
+		FieldInfo fieldInfo 
+					= obj_.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public)
+					.FirstOrDefault(x => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
+		if(propInfo != null)
+		{
+			fieldInfo.SetValue(obj_, value);
+			return true;
+		}			
+
+		return false;
+
+	}  
+	//============  reflection properties  get/set ===========//
+
+	 // cmd.StandardInput.WriteLine("powershell (Invoke-WebRequest http://ipinfo.io/ip).Content >> %filepath%");
+	 */
+
+
+		//cachedCall(class, "MessageBox", new object[] { par1 }
+		public static string cachedCall(string MethodFullName, object[] parameters, int minutes)
+		{
+			string result = "";
+			try
+			{
+				int idx = MethodFullName.LastIndexOf('.');
+				string className = idx < 0 ? MethodBase.GetCurrentMethod().DeclaringType.FullName : MethodFullName.Substring(0, idx);
+				Type classType = Type.GetType(className);
+				string methodName = idx < 0 ? MethodFullName : MethodFullName.Replace(className + ".", "");
+
+				string fullPathName = className + "." + methodName;
+				string key = @"Software\Puvox\cachedCalls\aa" + fullPathName + md5(PuvoxLibrary.Methods.tryEnumerabledString(parameters, "")) + minutes.ToString();
+				string cacheKey = key + "_cache";
+
+				if (isCacheSet(cacheKey, minutes))
+				{
+					result = getRegistryValue(key, "nothin");
+				}
+				else
+				{
+					MethodInfo method = classType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+					if (method==null)
+					{
+						m("You are trying to trigger non-existing method:" + methodName + "("+ className + ")");
+						return "";
+					}
+					result = (string)method.Invoke(null, parameters);
+					setRegistryValue(key, result);
+				}
+			}
+			catch (Exception e)
+			{
+				m(e);
+			}
+			return result;
+		}
 
 
 		#region Registry
@@ -858,8 +1014,10 @@ namespace PuvoxLibrary
 			return RegistryKey.OpenBaseKey(rh, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32);
 		}
 
+		//64 bit detection  https://pastebin.com/raw/yw4gSLK0
 		public static bool is64BitOS = Environment.Is64BitOperatingSystem;
 
+		// https://docs.microsoft.com/en-us/dotnet/framework/get-started/system-requirements
 
 		public static void Read64bitRegistryFrom32bitApp(string[] args)
 		{
@@ -883,9 +1041,9 @@ namespace PuvoxLibrary
 
 		public static Dictionary<string, string> myregs = new Dictionary<string, string>();
 
-		public static string regPartFromKey(string key, int partN)
+		public static string regPartFromKey(string key, bool Dir_or_Key)
 		{
-			if (partN == 1)
+			if (Dir_or_Key)
 			{
 				if (charsInPhrase(key, "\\") != 0)
 				{
@@ -895,10 +1053,6 @@ namespace PuvoxLibrary
 			}
 			else
 			{
-				if (partN != 2)
-				{
-					return "";
-				}
 				if (charsInPhrase(key, "\\") != 0)
 				{
 					return lastPart(key);
@@ -907,85 +1061,94 @@ namespace PuvoxLibrary
 			}
 		}
 
-
-		public static bool existsRegistryValue(string key)
+		public static bool existsRegistryValue(string pathKey)
 		{
-			return getRegistryValue(key) != null;
+			string path = regPartFromKey(pathKey, true);
+			string key = regPartFromKey(pathKey, false);
+			RegistryKey registryHiveKey = getRegistryHiveKey(chosenRegHive);
+			if (registryHiveKey == null)
+			{
+				return false;
+			}
+			else
+			{
+				RegistryKey registryKey = registryHiveKey.OpenSubKey(path);
+				// if path empty
+				if (registryKey == null)
+				{
+					registryHiveKey.Close();
+					return false;
+				}
+				else
+				{
+					object value = registryKey.GetValue(key);
+					registryKey.Close();
+					registryHiveKey.Close();
+					return value != null;
+				}
+			}
 		}
 
-
-		public static bool existsRegistryValue(string path, string key)
-		{
-			return getRegistryValue(path + key) != null;
-		}
-
-
-		public static string getRegistryValue(string key)
-		{
-			return getRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2));
+		public static string getRegistryValue(string patKey, string defaultValue)
+		{ 
+			return getRegistryValue( regPartFromKey(patKey, true), regPartFromKey(patKey, false), defaultValue);
 		}
 
 		// // ----- 62 vs 32 :  https://apttech.wordpress.com/2012/01/06/difference-between-a-registry-hive-and-registry-key-2/
-		public static string getRegistryValue(string path, string key)
+		public static string getRegistryValue(string path, string key, object defaultValue)
 		{
-			string result;
 			try
 			{
-				string text = "";
+				//if cached
 				if (myregs.ContainsKey(path + key))
 				{
-					result = myregs[path + key];
+					return myregs[path + key];
 				}
 				else
 				{
 					RegistryKey registryHiveKey = getRegistryHiveKey(chosenRegHive);
 					if (registryHiveKey == null)
 					{
-						result = text;
+						return defaultValue==null? null : defaultValue.ToString();
 					}
 					else
 					{
 						RegistryKey registryKey = registryHiveKey.OpenSubKey(path);
+						// if path empty
 						if (registryKey == null)
 						{
+							return defaultValue == null ? null : defaultValue.ToString();
 							registryHiveKey.Close();
-							result = text;
 						}
 						else
 						{
 							object value = registryKey.GetValue(key);
-							text = ((value != null) ? ((string)value) : null);
 							registryKey.Close();
 							registryHiveKey.Close();
-							myregs[path + key] = text;
-							result = text;
+							if (value == null)
+							{
+								return defaultValue == null ? null : defaultValue.ToString();
+							}
+							else 
+							{ 
+								myregs[path + key] = value.ToString();
+								return myregs[path + key];
+							}
 						}
 					}
 				}
 			}
-			catch (Exception)
+			catch (Exception e)
 			{
-				result = "";
+				m(e);
 			}
-			return result;
+			return null;
 		}
 
 
-		public static string getRegistryValue(string key, string defaultVal, bool nothing)
+		public static void setRegistryValue(string patKey, string value)
 		{
-			string registryValue = getRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2));
-			if (string.IsNullOrEmpty(registryValue))
-			{
-				setRegistryValue(key, defaultVal);
-				return defaultVal;
-			}
-			return registryValue;
-		}
-
-
-		public static void setRegistryValue(string key, string value)
-		{
-			setRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2), value);
+			setRegistryValue(regPartFromKey(patKey, true), regPartFromKey(patKey, false), value);
 		}
 
 
@@ -1008,7 +1171,7 @@ namespace PuvoxLibrary
 				}
 				else
 				{
-					Methods.m("| regHive is null");
+					m("| regHive is null");
 					result = false;
 				}
 			}
@@ -1022,7 +1185,7 @@ namespace PuvoxLibrary
 
 		public static string getSetRegistryValue(string key, string value)
 		{
-			return getSetRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2), value);
+			return getSetRegistryValue(regPartFromKey(key, true), regPartFromKey(key, false), value);
 		}
 
 
@@ -1044,14 +1207,7 @@ namespace PuvoxLibrary
 			}
 			catch (Exception ex)
 			{
-				Methods.m(string.Concat(new string[]
-				{
-					ex.Message,
-					" | getSetRegistryValue ",
-					path,
-					" ->",
-					key
-				}));
+				m(ex.Message + " | getSetRegistryValue " + path + " ->" + key);
 				result = null;
 			}
 			return result;
@@ -1077,7 +1233,7 @@ namespace PuvoxLibrary
 			}
 			catch (Exception ex)
 			{
-				Methods.m(ex.Message + " | Reading registry " + KeyName.ToUpper());
+				m(ex.Message + " | Reading registry " + KeyName.ToUpper());
 				result = "";
 			}
 			return result;
@@ -1096,7 +1252,7 @@ namespace PuvoxLibrary
 			}
 			catch (Exception ex)
 			{
-				Methods.m(ex.Message + " | Writing registry " + KeyName.ToUpper());
+				m(ex.Message + " | Writing registry " + KeyName.ToUpper());
 				result = false;
 			}
 			return result;
@@ -1122,7 +1278,7 @@ namespace PuvoxLibrary
 			}
 			catch (Exception ex)
 			{
-				Methods.m(ex.Message + " | Deleting SubKey " + subKey.ToUpper());
+				m(ex.Message + " | Deleting SubKey " + subKey.ToUpper());
 				result = false;
 			}
 			return result;
@@ -1144,7 +1300,7 @@ namespace PuvoxLibrary
 			}
 			catch (Exception ex)
 			{
-				Methods.m(ex.Message + " | Deleting SubKey tree" + subKey.ToUpper());
+				m(ex.Message + " | Deleting SubKey tree" + subKey.ToUpper());
 				result = false;
 			}
 			return result;
@@ -1162,7 +1318,7 @@ namespace PuvoxLibrary
 			}
 			catch (Exception ex)
 			{
-				Methods.m(ex.Message + " | Retriving subkeys of" + subKey.ToUpper());
+				m(ex.Message + " | Retriving subkeys of" + subKey.ToUpper());
 				result = 0;
 			}
 			return result;
@@ -1180,7 +1336,7 @@ namespace PuvoxLibrary
 			}
 			catch (Exception ex)
 			{
-				Methods.m(ex.Message + " | Retrieving subkeys of" + subKey.ToUpper());
+				m(ex.Message + " | Retrieving subkeys of" + subKey.ToUpper());
 				result = 0;
 			}
 			return result;
@@ -1211,38 +1367,70 @@ namespace PuvoxLibrary
 		}
 
 
-		public static bool FirstTimeAction(string regKey)
+		public static bool isCacheSet(string PathKey, int minutes)
 		{
-			if (getRegistryValue("triggered_" + regKey) != "y")
-			{
-				setRegistryValue("triggered_" + regKey, "y");
-				return true;
-			}
-			return false;
-		}
-
-
-		public static bool TimeGone(string Key, int minutes)
-		{
-			string registryValue = getRegistryValue("timegone_" + Key);
+			string registryValue = getRegistryValue(PathKey, "");
 			if (string.IsNullOrEmpty(registryValue) || DateTime.Now > DateTime.Parse(registryValue).AddMinutes((double)minutes))
 			{
-				setRegistryValue("timegone_" + Key, DateTime.Now.ToString());
-				return true;
+				setRegistryValue(PathKey, DateTime.Now.ToString());
+				return false;
 			}
-			return false;
+			return true;
 		}
 		#endregion
 
 
 
 
+		// has problems with NinjaTrader 3.5 framework
+		//   public Dictionary<string, string> deserialize(string str)
+		//   {
+		//       System.Web.Script.Serialization.JavaScriptSerializer serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+		//        return StringedDictionary((Dictionary<string, object>)serializer.DeserializeObject(str));
+		//    }
 
 
+		// Dictionary<string, string> result = dObject.ToDictionary(kvp => kvp.Key, kvp => Convert.ToString(kvp.Value));
+
+		public string serialize(Dictionary<string, object> dict)
+		{
+			try
+			{
+				return "";
+				//return (new System.Web.Script.Serialization.JavaScriptSerializer()).Serialize(dict.ToDictionary(item => item.Key.ToString(), item => item.Value.ToString()));
+			}
+			catch (Exception e)
+			{
+				m(e.Message);
+				return "";
+			}
+
+		}
+
+		public string serialize(Dictionary<string, string> dict)
+		{
+			return "";
+			//return (new System.Web.Script.Serialization.JavaScriptSerializer()).Serialize(dict.ToDictionary(item => item.Key.ToString(), item => item.Value.ToString()));
+		}
 
 
+		public string MyDictionaryToJson(Dictionary<string, int> dict)
+		{
+			var entries = dict.Select(d =>
+				string.Format("\"{0}\": [{1}]", d.Key, string.Join(",", d.Value)));
+			return "{" + string.Join(",", entries) + "}";
+		}
 
 
+		public string regplace(string input, string pattern)
+		{
+			return regplace(input, pattern, "");
+		}
+
+		public string regplace(string input, string pattern, string with)
+		{
+			return new System.Text.RegularExpressions.Regex(pattern).Replace(input, "");
+		}
 
 
 		/* doesnt work in C#4.5 native projects
@@ -1850,7 +2038,7 @@ namespace PuvoxLibrary
 			}
 			catch (Exception ex)
 			{
-				Methods.m(ex.Message);
+				m(ex.Message);
 			}
 		}
 
@@ -1863,46 +2051,47 @@ namespace PuvoxLibrary
 
 		public static string optionsPrefix = "formoption_";
 
-		public static bool fillFormOptions(System.Windows.Forms.Control.ControlCollection cts)
+
+		public static string getFormOption(string key, string two, string regKeyBase)
+		{
+			return getRegistryValue(regKeyBase + optionsPrefix + key, two);
+		}
+
+		public static bool fillFormOptions(System.Windows.Forms.Control.ControlCollection cts, string regKeyBase)
 		{
 			foreach (object obj in cts)
 			{
 				System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
 				if (control != null && isUserInput(control))
 				{
-					string defaultVal;
+					string defaultVal = control.Text;
+					string regValue = getRegistryValue(regKeyBase + optionsPrefix + control.Name, defaultVal).ToLower();
+					//checkbox checking need to be obtained as string
 					if (control is System.Windows.Forms.CheckBox)
 					{
-						defaultVal = ((System.Windows.Forms.CheckBox)control).Checked.ToString();
+						(control as System.Windows.Forms.CheckBox).Checked = regValue == "true";
 					}
 					else
 					{
-						defaultVal = control.Text;
+						control.Text = getRegistryValue(regKeyBase + optionsPrefix + control.Name, regValue);
 					}
-					control.Text = getRegistryValue(optionsPrefix + control.Name, defaultVal, false);
 				}
 			}
 			return true;
 		}
 
 
-		public static bool saveFormOptions(System.Windows.Forms.Control.ControlCollection cts)
+		public static bool saveFormOptions(System.Windows.Forms.Control.ControlCollection cts, string regKeyBase)
 		{
 			foreach (object obj in cts)
 			{
 				System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
 				if (control != null && isUserInput(control))
 				{
-					string value;
-					if (control is System.Windows.Forms.CheckBox)
-					{
-						value = ((System.Windows.Forms.CheckBox)control).Checked.ToString();
-					}
-					else
-					{
-						value = control.Text;
-					}
-					setRegistryValue(optionsPrefix + control.Name, value);
+					string value = control.Text;
+					//checkbox checking need to be saved as string
+					if (control is System.Windows.Forms.CheckBox) value = ((System.Windows.Forms.CheckBox)control).Checked ? "true" : "false";
+					setRegistryValue(regKeyBase + optionsPrefix + control.Name, value);
 				}
 			}
 			return true;
@@ -2000,7 +2189,7 @@ namespace PuvoxLibrary
 					}
 					else
 					{
-						Methods.m("incorrect value in :" + MethodBase.GetCurrentMethod().Name + ":" + what);
+						m("incorrect value in :" + MethodBase.GetCurrentMethod().Name + ":" + what);
 					}
 					result = true;
 				}
@@ -2424,7 +2613,7 @@ namespace PuvoxLibrary
 			{
 				if (!string.IsNullOrEmpty(messageShow))
 				{
-					Methods.m(messageShow + ex.Message);
+					m(messageShow + ex.Message);
 				}
 			}
 			return false;
@@ -2628,12 +2817,12 @@ namespace PuvoxLibrary
 		}
 
 
+		public static string gsApkPath = "";
 		public static void googleSetKeyFile(string FileContent)
 		{
-			string text = Environment.GetEnvironmentVariable("appdata") + "\\gsapk.xyz";
-			setRegistryValue("gsapiKeyPath", text);
-			File.WriteAllText(text, FileContent);
-			SetGoogleCredentialsDefaults(text);
+			gsApkPath = Environment.GetEnvironmentVariable("appdata") + "\\gsapk.xyz";
+			File.WriteAllText(gsApkPath, FileContent);
+			SetGoogleCredentialsDefaults(gsApkPath);
 		}
 
 
@@ -2643,17 +2832,7 @@ namespace PuvoxLibrary
 		}
 
 
-		public static string selectedLang = "en";
-		public static Dictionary<string, Dictionary<string, string>> transl_texts;
-		public static string translate(string txt)
-		{
-			if (transl_texts.ContainsKey(txt) && transl_texts[txt].ContainsKey(selectedLang))
-			{
-				return transl_texts[txt][selectedLang];
-			}
-			return translatedReady(selectedLang, txt);
-		}
-
+	
 
 		public static void setTexts(Dictionary<string, string> dict, string lang_2char, Form frm)
 		{
@@ -2661,8 +2840,8 @@ namespace PuvoxLibrary
 			{
 				string keyNm_this = "trans_" + v.Value + "_" + lang_2char;    // keyname for that element
 				string keyNm_ENG = "trans_" + v.Value + "_en";                // keyname for that element
-				string val_this = getRegistryValue(keyNm_this);              // value from registry for element 
-				string val_ENG = getRegistryValue(keyNm_ENG);              // value from registry for element 
+				string val_this = getRegistryValue(keyNm_this, "");              // value from registry for element 
+				string val_ENG = getRegistryValue(keyNm_ENG, "");              // value from registry for element 
 				if (
 					(String.IsNullOrEmpty(val_this))                            //if empty 
 					||
@@ -2675,7 +2854,7 @@ namespace PuvoxLibrary
 					}
 					else
 					{
-						val_this = GTranslate_checker(v.Key, lang_2char);
+						val_this = v.Key; //GTranslate_checker(v.Key, lang_2char);
 					}
 
 					setRegistryValue(keyNm_this, val_this);
@@ -2684,40 +2863,14 @@ namespace PuvoxLibrary
 			}
 		}
 
-
-		public static string translatedReady(string targetLang, string englishValue)
-		{
-			string text = englishValue;
-			string key = "translReady_" + md5(englishValue) + "_" + targetLang;
-			if (targetLang != "en")
-			{
-				string registryValue = getRegistryValue(key);
-				if (registryValue == null)
-				{
-					text = GTranslate_checker(englishValue, targetLang);
-					setRegistryValue(key, text);
-				}
-				else
-				{
-					text = registryValue;
-				}
-			}
-			else
-			{
-				setRegistryValue(key, englishValue);
-			}
-			return text;
-		}
-
-
 		public static string GTranslate_checker(string what, string lang_target)
 		{
 			string result;
-			if (MethodExists(this, "GTranslate_callback"))
+			if (MethodExists(null, "GTranslate_callback"))
 			{
 				Type typeFromHandle = typeof(Methods);
 				MethodInfo method = typeFromHandle.GetMethod("GTranslate_callback", BindingFlags.Instance | BindingFlags.Public);
-				result = (string)method.Invoke(this, new object[]
+				result = (string)method.Invoke(null, new object[]  //this instead of null
 				{
 					what,
 					lang_target,
@@ -2730,6 +2883,45 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
+
+		public static Dictionary<string, Dictionary<string, string>> transl_texts = new Dictionary<string, Dictionary<string, string>>();
+		public static string translationsBaseReg = @"Software\Puvox\TranslatedTexts\";
+		public static string translate(string targetLang, string englishText)
+		{
+			string result = "";
+			//cache
+			if (!transl_texts.ContainsKey(englishText)) transl_texts[englishText] = new Dictionary<string, string>();
+
+			if (transl_texts[englishText].ContainsKey(targetLang))
+			{
+				return transl_texts[englishText][targetLang];
+			}
+			else
+			{
+				string key = translationsBaseReg + "t_" + md5(englishText) + "_" + targetLang;
+				if (targetLang != "en")
+				{
+					string registryValue = getRegistryValue(key, "");
+					if (string.IsNullOrEmpty(registryValue))
+					{
+						result = englishText;// GTranslate_checker(englishValue, targetLang);
+						setRegistryValue(key, result);
+					}
+					else
+					{
+						result = registryValue;
+					}
+				}
+				else
+				{
+					result = englishText;
+					setRegistryValue(key, englishText);
+				}
+				transl_texts[englishText][targetLang] = result;
+			}
+			return result;
+		}
+ 
 
 
 		private Dictionary<string, string> gtranslate_dict;
@@ -2786,14 +2978,14 @@ namespace PuvoxLibrary
 
 		public static bool IsDeveloperMachine()
 		{
-			return Environment.GetEnvironmentVariable(Methods.developerMachineString) != null;
+			return Environment.GetEnvironmentVariable(developerMachineString) != null;
 		}
 
 		public static string DeveloperMachineAddition()
 		{
-			if (Methods.IsDeveloperMachine())
+			if (IsDeveloperMachine())
 			{
-				return "&developerKey=" + Environment.GetEnvironmentVariable(Methods.developerMachineString).ToString();
+				return "&developerKey=" + Environment.GetEnvironmentVariable(developerMachineString).ToString();
 			}
 			return "";
 		}
@@ -2807,16 +2999,18 @@ namespace PuvoxLibrary
 
 
 		#region debugger
-		public static void m(int obj) { Methods.m(obj.ToString()); }
-		public static void m(double obj) { Methods.m(obj.ToString()); }
-		public static void m(bool obj) { Methods.m(obj.ToString()); }
-		public static void m(Exception obj) { Methods.m(obj.ToString()); }
-		public static void m(object obj) { Methods.m(obj.ToString()); }
+		public static void m(int obj) { m(obj.ToString()); }
+		public static void m(double obj) { m(obj.ToString()); }
+		public static void m(bool obj) { m(obj.ToString()); } 
+		public static void m(Exception obj) { m(obj.ToString()); }
+		public static void m(Dictionary<object, object> obj) { try { m(tryEnumerabledString(obj)); } catch { m(obj.ToString()); } }
+		public static void m(object obj) { m(obj.ToString()); }
+		public static void m(object obj, bool showTrace) { m(obj.ToString() + Environment.NewLine + stackFramesString(new StackTrace()) ); }
 		public static void m(object[] obj)
 		{
-			if (obj == null) { Methods.m("null"); return; }
+			if (obj == null) { m("null"); return; }
 			string text = ""; foreach (object obj2 in obj) text = text + ((obj2 == null) ? "null" : obj.ToString()) + Methods.nl_;
-			Methods.m(text);
+			m(text);
 		}
 		public static void m(string obj)
 		{
@@ -2840,45 +3034,38 @@ namespace PuvoxLibrary
 		}
 
 
+		public static void cl(object obj) { Console.WriteLine(obj == null ? "null" : obj.ToString()); System.Diagnostics.Debug.WriteLine(obj == null ? "null" : obj.ToString()); }
+
 
 		// another kind of dumper (removed):  https://pastebin.com/KEzWthMp
 
 
-		public static string dump(object obj) { return Methods.dump(obj, Methods.AllBindingFlags, false, 1, 1, ""); }
-		public static string dump(object obj, int deep) { return Methods.dump(obj, Methods.AllBindingFlags, false, deep, 1, ""); }
-		public static string dump(object obj, bool execMethods) { return Methods.dump(obj, Methods.AllBindingFlags, execMethods, 1, 1, ""); }
-		public static string dump(object obj, int deep, bool execMethods) { return Methods.dump(obj, Methods.AllBindingFlags, execMethods, deep, 1, ""); }
-		public static string dump(object obj, BindingFlags bindingFlags, bool execMethods) { return Methods.dump(obj, bindingFlags, execMethods, 1, 1, ""); }
+		public static void dumpmsg(object obj) {  m(dump(obj)); }
+		public static string dump(object obj) { return dump(obj, AllBindingFlags, false, 1, 1, ""); }
+		public static string dump(object obj, int deep) { return dump(obj, AllBindingFlags, false, deep, 1, ""); }
+		public static string dump(object obj, bool execMethods) { return dump(obj, AllBindingFlags, execMethods, 1, 1, ""); }
+		public static string dump(object obj, int deep, bool execMethods) { return dump(obj, AllBindingFlags, execMethods, deep, 1, ""); }
+		public static string dump(object obj, BindingFlags bindingFlags, bool execMethods) { return dump(obj, bindingFlags, execMethods, 1, 1, ""); }
 		// ugly-fied
 		private static string dump(object obj, BindingFlags bindingFlags, bool execMethods, int maxRecursiveDeep, int currentDeep, string prefix)
 		{
-			string text = prefix + " | ";
+			string phraseSTR = prefix + " | ";
 			string str = prefix + " -> ";
-			string text2 = "";
 			string newLine = Environment.NewLine;
 			List<string> list = new List<string>();
 			Dictionary<string, List<string>> dictionary = new Dictionary<string, List<string>>();
-			string text3 = text2;
-			text2 = string.Concat(new string[]
-			{
-				text3,
-				newLine,
-				text,
-				(currentDeep == 1) ? ("<----------------- START (All Members : " + bindingFlags.ToString() + ") ----------------------->") : "-----------",
-				newLine
-			});
-			string text4 = text2;
-			text2 = string.Concat(new string[]
-			{
-				text4,
-				"<--- OBJECT TYPE: ",
-				obj.GetType().ToString(),
-				" --->",
-				newLine
-			});
+			string text4 = newLine + phraseSTR + ( (currentDeep == 1) ? ("<----------------- START (All Members : " + bindingFlags.ToString() + ") ----------------------->") : "-----------") + newLine ;
+			string result = text4 + "<--- OBJECT TYPE: " + obj.GetType().ToString() + " --->" + newLine;
 			try
 			{
-				foreach (MemberInfo memberInfo in Methods.GetMembersInclPrivateBase_static(obj.GetType(), bindingFlags))
+				var enumerable = obj as System.Collections.IEnumerable;
+				if (enumerable != null)
+				{
+					return tryEnumerabledString(obj, "__ ");
+					result += tryEnumerabledString(obj, "__ ");
+				}
+				else
+				foreach (MemberInfo memberInfo in GetMembersInclPrivateBase_static(obj.GetType(), bindingFlags))
 				{
 					string text5 = "__";
 					string text6 = "__cant_detect1__";
@@ -2891,7 +3078,7 @@ namespace PuvoxLibrary
 						text5 = "_name_not_detected_";
 					}
 					string text7 = memberInfo.MemberType.ToString();
-					string text8 = Methods.nl_ + " ? " + str + text5;
+					string text8 = nl_ + " ? " + str + text5;
 					try
 					{
 						if (memberInfo.MemberType == MemberTypes.Field)
@@ -2910,19 +3097,19 @@ namespace PuvoxLibrary
 									"   [",
 									value.GetType().FullName,
 									"]  <",
-									Methods.AccessModifierType(fieldInfo),
+									AccessModifierType(fieldInfo),
 									">"
 								});
-								if (!Methods.singleTypes.Contains(value.GetType().ToString()))
+								if (!singleTypes.Contains(value.GetType().ToString()))
 								{
-									string text9 = Methods.tryEnumerabledString(value, text8);
+									string text9 = tryEnumerabledString(value, text8);
 									if (text9 != "")
 									{
 										text6 += text9;
 									}
 									else if (currentDeep < maxRecursiveDeep)
 									{
-										text6 += Methods.dump(value, bindingFlags, execMethods, maxRecursiveDeep, currentDeep + 1, text8);
+										text6 += dump(value, bindingFlags, execMethods, maxRecursiveDeep, currentDeep + 1, text8);
 									}
 								}
 							}
@@ -2943,19 +3130,19 @@ namespace PuvoxLibrary
 									"   [",
 									value2.GetType().FullName,
 									"]  <",
-									Methods.AccessModifierType(propertyInfo),
+									AccessModifierType(propertyInfo),
 									">"
 								});
-								if (!Methods.singleTypes.Contains(value2.GetType().ToString()))
+								if (!singleTypes.Contains(value2.GetType().ToString()))
 								{
-									string text10 = Methods.tryEnumerabledString(value2, text8);
+									string text10 = tryEnumerabledString(value2, text8);
 									if (text10 != "")
 									{
 										text6 += text10;
 									}
 									else if (currentDeep < maxRecursiveDeep)
 									{
-										text6 += Methods.dump(value2, bindingFlags, execMethods, maxRecursiveDeep, currentDeep + 1, text8);
+										text6 += dump(value2, bindingFlags, execMethods, maxRecursiveDeep, currentDeep + 1, text8);
 									}
 								}
 							}
@@ -2966,7 +3153,7 @@ namespace PuvoxLibrary
 							{
 								MethodInfo methodInfo = (MethodInfo)memberInfo;
 								string text11 = methodInfo.ReturnType.ToString();
-								text6 = string.Concat(new string[] { "   [", text11.Replace("System.", ""), "]  (", Methods.tryEnumerabledString(methodInfo.GetParameters(), ", "), ")  <", Methods.AccessModifierType(methodInfo), ">" });
+								text6 = string.Concat(new string[] { "   [", text11.Replace("System.", ""), "]  (", tryEnumerabledString(methodInfo.GetParameters(), ", "), ")  <", AccessModifierType(methodInfo), ">" });
 								if (!execMethods)
 								{
 									goto IL_52F;
@@ -3031,8 +3218,8 @@ namespace PuvoxLibrary
 					{
 						text6 += "--------------cant-get-value";
 					}
-					string str2 = Methods.pChars(text5) + text6;
-					string text12 = text + text7 + ":    " + str2;
+					string str2 = pChars(text5) + text6;
+					string text12 = phraseSTR + text7 + ":    " + str2;
 					if (!list.Contains(text12))
 					{
 						list.Add(text12);
@@ -3051,22 +3238,20 @@ namespace PuvoxLibrary
 			}
 			catch (Exception e)
 			{
-				text2 += Methods.ExceptionMessage(e, obj);
-				Methods.m(text2);
+				result += ExceptionMessage(e, obj);
+				m(result);
 			}
 			string text13 = "";
 			foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
 			{
-				foreach (string str3 in (from q in keyValuePair.Value
-										 orderby q
-										 select q).ToList<string>())
+				foreach (string str3 in (from q in keyValuePair.Value    orderby q    select q).ToList<string>())
 				{
 					text13 += str3;
 				}
 			}
-			text2 += text13;
-			text2 = text2 + text + ((currentDeep == 1) ? ("<----------------- END ---------------------->" + newLine + newLine) : "-----------") + newLine;
-			return text2;
+			result += text13;
+			result = result + phraseSTR + ((currentDeep == 1) ? ("<----------------- END ---------------------->" + newLine + newLine) : "-----------") + newLine;
+			return result;
 		}
 
 
@@ -3085,13 +3270,13 @@ namespace PuvoxLibrary
 				PropertyInfo propertyInfo = objInfo as PropertyInfo;
 				if (propertyInfo.SetMethod == null)
 				{
-					return "GetOnly:" + Methods.AccessModifierType(propertyInfo.GetMethod);
+					return "GetOnly:" + AccessModifierType(propertyInfo.GetMethod);
 				}
 				if (propertyInfo.GetMethod == null)
 				{
-					return "SetOnly:" + Methods.AccessModifierType(propertyInfo.SetMethod);
+					return "SetOnly:" + AccessModifierType(propertyInfo.SetMethod);
 				}
-				return Methods.AccessModifierType(propertyInfo.GetMethod) + " & " + Methods.AccessModifierType(propertyInfo.GetMethod);
+				return AccessModifierType(propertyInfo.GetMethod) + " & " + AccessModifierType(propertyInfo.GetMethod);
 			}
 			else if (objInfo is MethodInfo)
 			{
@@ -3103,7 +3288,7 @@ namespace PuvoxLibrary
 			}
 			return "Did not find access modifier";
 		}
-
+		public static string tryEnumerabledString(object obj) { return tryEnumerabledString(obj, ""); }
 		public static string tryEnumerabledString(object obj, string prefix_)
 		{
 			string text = "";
@@ -3115,7 +3300,7 @@ namespace PuvoxLibrary
 					bool flag = false;
 					foreach (object obj2 in enumerable)
 					{
-						text = text + ((!flag && !prefix_.Contains(Methods.nl_)) ? "" : prefix_) + " ::: " + obj2.ToString();
+						text = text + ((!flag && !prefix_.Contains(nl_)) ? "" : prefix_) + " ::: " + obj2.ToString();
 						flag = true;
 					}
 				}
@@ -3252,12 +3437,12 @@ namespace PuvoxLibrary
 					propertyInfo.SetValue(obj_, Convert.ToBoolean(value), null);
 					return true;
 				}
-				if (Methods.isInt(value))
+				if (isInt(value))
 				{
 					propertyInfo.SetValue(obj_, Convert.ToInt32(value), null);
 					return true;
 				}
-				if (Methods.isDouble(value))
+				if (isDouble(value))
 				{
 					propertyInfo.SetValue(obj_, Convert.ToDouble(value), null);
 					return true;
@@ -3272,12 +3457,12 @@ namespace PuvoxLibrary
 					fieldInfo.SetValue(obj_, Convert.ToBoolean(value));
 					return true;
 				}
-				if (Methods.isInt(value))
+				if (isInt(value))
 				{
 					fieldInfo.SetValue(obj_, Convert.ToInt32(value));
 					return true;
 				}
-				if (Methods.isDouble(value))
+				if (isDouble(value))
 				{
 					fieldInfo.SetValue(obj_, Convert.ToDouble(value));
 					return true;
@@ -3293,14 +3478,14 @@ namespace PuvoxLibrary
 			bool result;
 			try
 			{
-				PropertyInfo left = obj_.GetType().GetProperties(Methods.AllBindingFlags).FirstOrDefault((PropertyInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
+				PropertyInfo left = obj_.GetType().GetProperties(AllBindingFlags).FirstOrDefault((PropertyInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
 				if (left != null)
 				{
 					result = true;
 				}
 				else
 				{
-					FieldInfo left2 = obj_.GetType().GetFields(Methods.AllBindingFlags).FirstOrDefault((FieldInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
+					FieldInfo left2 = obj_.GetType().GetFields(AllBindingFlags).FirstOrDefault((FieldInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
 					if (left2 != null)
 					{
 						result = true;
@@ -3332,12 +3517,12 @@ namespace PuvoxLibrary
 						propertyInfo.SetValue(obj_, Convert.ToBoolean(value), null);
 						return true;
 					}
-					if (Methods.isInt(value))
+					if (isInt(value))
 					{
 						propertyInfo.SetValue(obj_, Convert.ToInt32(value), null);
 						return true;
 					}
-					if (Methods.isDouble(value))
+					if (isDouble(value))
 					{
 						propertyInfo.SetValue(obj_, Convert.ToDouble(value), null);
 						return true;
@@ -3351,12 +3536,12 @@ namespace PuvoxLibrary
 						fieldInfo.SetValue(obj_, Convert.ToBoolean(value));
 						return true;
 					}
-					if (Methods.isInt(value))
+					if (isInt(value))
 					{
 						fieldInfo.SetValue(obj_, Convert.ToInt32(value));
 						return true;
 					}
-					if (Methods.isDouble(value))
+					if (isDouble(value))
 					{
 						fieldInfo.SetValue(obj_, Convert.ToDouble(value));
 						return true;
@@ -3420,7 +3605,7 @@ namespace PuvoxLibrary
 				else
 				{
 					string text = "";
-					string text2 = Methods.Repeat("~", indent + 1);
+					string text2 = Repeat("~", indent + 1);
 					Type type = obj.GetType();
 					foreach (PropertyInfo propertyInfo in type.GetProperties())
 					{
@@ -3585,7 +3770,7 @@ namespace PuvoxLibrary
 			string[] subKeyNames = registryKey.GetSubKeyNames();
 			foreach (string text in subKeyNames)
 			{
-				Methods.m(text.ToString());
+				m(text.ToString());
 			}
 		}
 
@@ -3838,7 +4023,7 @@ namespace PuvoxLibrary
 				string text = Methods.ExceptionMessage(eventArgs.Exception, method, "");
 				if (show || Methods.IsDeveloperMachine())
 				{
-					Methods.m(text);
+					m(text);
 					return;
 				}
 				log(text);
@@ -3881,7 +4066,7 @@ namespace PuvoxLibrary
 			if (!Methods.inCatchAllLoop)
 			{
 				Methods.inCatchAllLoop = true;
-				Methods.m(sender);
+				m(sender);
 				Methods.inCatchAllLoop = false;
 			}
 		}
@@ -3914,21 +4099,14 @@ namespace PuvoxLibrary
 				text += Methods.ExceptionMessage(e, targetObj);
 				if (Methods.isDeveloperMode("Exceptions"))
 				{
-					Methods.m(text);
+					m(text);
 				}
 				Methods.FileWriteSafe(Methods.tmpDir + "_lastError_" + ((targetObj == null || targetObj.GetType() == null) ? "unknown" : targetObj.GetType().Name), text);
 				result = text;
 			}
 			catch (Exception ex)
 			{
-				result = string.Concat(new string[]
-				{
-					"problem in ExceptionForDeveloper method. ",
-					text,
-					ex.Message,
-					Methods.nl_,
-					e.Message
-				});
+				result = "problem in ExceptionForDeveloper method. " + text + ex.Message + nl_ + e.Message;
 			}
 			return result;
 		}
@@ -3937,6 +4115,13 @@ namespace PuvoxLibrary
 		public static string ExceptionMessage(Exception e, object targetObj)
 		{
 			return Methods.ExceptionMessage(e, targetObj, "");
+		}
+
+		public static string ExceptionMessage(Exception e, object targetObj, bool echo_or_return)
+		{
+			string txt = Methods.ExceptionMessage(e, targetObj, "");
+			if (echo_or_return) { m(txt); return ""; }
+			return txt;
 		}
 
 
@@ -4009,6 +4194,17 @@ namespace PuvoxLibrary
 			return text;
 		}
 
+		public static string stackFramesString(StackTrace stktr)
+		{
+			IEnumerable<StackFrame> enumerable = stktr.GetFrames().Reverse<StackFrame>();
+			string text = "";
+			foreach (StackFrame stackFrame in enumerable)
+			{
+				MethodBase method = stackFrame.GetMethod();
+				text = text + " > " + ((method != null) ? method.Name : "method_name_not_detected");
+			}
+			return text;
+		}
 		#endregion
 
 
@@ -4038,7 +4234,60 @@ namespace PuvoxLibrary
 		}
 
 
+		/*
+		 * 
+		 * 
+        internal byte[] Combine_bytestring(params byte[][] arrays)
+        {
+            try
+            {
+                byte[] rv = new byte[arrays.Sum(a => a.Length)];
+                int offset = 0;
+                foreach (byte[] array in arrays)
+                {
+                    System.Buffer.BlockCopy(array, 0, rv, offset, array.Length);
+                    offset += array.Length;
+                }
+                return rv;
+            }
+            catch (Exception e)
+            {
+                ex(e);
+                return new byte[0];
+            }
+        }
 
+        internal byte[] addByteToArray(byte[] bArray, byte newByte)
+        {
+            try
+            {
+                byte[] newArray = new byte[bArray.Length + 1];
+                bArray.CopyTo(newArray, 0);
+                newArray[bArray.Length - 1] = newByte;
+                return newArray;
+            }
+            catch (Exception e)
+            {
+                ex(e);
+                return new byte[0];
+            }
+        }
+
+        internal byte[] combineByteArrays(byte[] ba1, byte[] ba2)
+        {
+            try
+            {
+                byte[] rv = new byte[ba1.Length + ba2.Length];
+                System.Buffer.BlockCopy(ba1, 0, rv, 0, ba1.Length);
+                System.Buffer.BlockCopy(ba2, 0, rv, ba1.Length, ba2.Length);
+                return rv;
+            }
+            catch (Exception e)
+            {
+                ex(e);
+                return new byte[0];
+            }
+        }*/
 
 
 
@@ -4070,120 +4319,131 @@ namespace PuvoxLibrary
 			public static Dictionary<string, object> ParseJSON(string json)
 			{
 				int end;
-				return ParseJSON(json, 0, out end);
+				var x=ParseJSON(json, 0, out end);
+				return x;
 			}
 			private static Dictionary<string, object> ParseJSON(string json, int start, out int end)
 			{
 				Dictionary<string, object> dict = new Dictionary<string, object>();
-				bool escbegin = false;
-				bool escend = false;
-				bool inquotes = false;
-				string key = null;
-				int cend;
-				StringBuilder sb = new StringBuilder();
-				Dictionary<string, object> child = null;
-				List<object> arraylist = null;
-				Regex regex = new Regex(@"\\u([0-9a-z]{4})", RegexOptions.IgnoreCase);
-				int autoKey = 0;
-				bool inSingleQuotes = false;
-				bool inDoubleQuotes = false;
-				for (int i = start; i < json.Length; i++)
+				end = 0;
+				try
 				{
-					char c = json[i];
-					if (c == '\\') escbegin = !escbegin;
-					if (!escbegin)
+					bool escbegin = false;
+					bool escend = false;
+					bool inquotes = false;
+					string key = null;
+					int cend;
+					StringBuilder sb = new StringBuilder();
+					List<object> arraylist = null;
+					Regex regex = new Regex(@"\\u([0-9a-z]{4})", RegexOptions.IgnoreCase);
+					int autoKey = 0;
+					bool inSingleQuotes = false;
+					bool inDoubleQuotes = false;
+					for (int i = start; i < json.Length; i++)
 					{
-						if (c == '"' && !inSingleQuotes)
+						char c = json[i];
+						if (c == '\\') escbegin = !escbegin;
+						if (!escbegin)
 						{
-							inDoubleQuotes = !inDoubleQuotes;
-							inquotes = !inquotes;
-							if (!inquotes && arraylist != null)
+							if (c == '"' && !inSingleQuotes)
 							{
-								arraylist.Add(DecodeString(regex, sb.ToString()));
-								sb.Length = 0;
-							}
-							continue;
-						}
-						else if (c == '\'' && !inDoubleQuotes)
-						{
-							inSingleQuotes = !inSingleQuotes;
-							inquotes = !inquotes;
-							if (!inquotes && arraylist != null)
-							{
-								arraylist.Add(DecodeString(regex, sb.ToString()));
-								sb.Length = 0;
-							}
-							continue;
-						}
-						if (!inquotes)
-						{
-							switch (c)
-							{
-								case '{':
-									if (i != start)
-									{
-										child = ParseJSON(json, i, out cend);
-										if (arraylist != null) arraylist.Add(child);
-										else
-										{
-											dict.Add(key.Trim(), child);
-											key = null;
-										}
-										i = cend;
-									}
-									continue;
-								case '}':
-									end = i;
-									if (key != null)
-									{
-										if (arraylist != null) dict.Add(key.Trim(), arraylist);
-										else dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
-									}
-									return dict;
-								case '[':
-									arraylist = new List<object>();
-									continue;
-								case ']':
-									if (key == null)
-									{
-										key = "array" + autoKey.ToString();
-										autoKey++;
-									}
-									if (arraylist != null && sb.Length > 0)
-									{
-										arraylist.Add(sb.ToString());
-										sb.Length = 0;
-									}
-									dict.Add(key.Trim(), arraylist);
-									arraylist = null;
-									key = null;
-									continue;
-								case ',':
-									if (arraylist == null && key != null)
-									{
-										dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
-										key = null;
-										sb.Length = 0;
-									}
-									if (arraylist != null && sb.Length > 0)
-									{
-										arraylist.Add(sb.ToString());
-										sb.Length = 0;
-									}
-									continue;
-								case ':':
-									key = DecodeString(regex, sb.ToString());
+								inDoubleQuotes = !inDoubleQuotes;
+								inquotes = !inquotes;
+								if (!inquotes && arraylist != null)
+								{
+									arraylist.Add(DecodeString(regex, sb.ToString()));
 									sb.Length = 0;
-									continue;
+								}
+								continue;
+							}
+							else if (c == '\'' && !inDoubleQuotes)
+							{
+								inSingleQuotes = !inSingleQuotes;
+								inquotes = !inquotes;
+								if (!inquotes && arraylist != null)
+								{
+									arraylist.Add(DecodeString(regex, sb.ToString()));
+									sb.Length = 0;
+								}
+								continue;
+							}
+							if (!inquotes)
+							{
+								switch (c)
+								{
+									case '{':
+										if (i != start)
+										{
+											Dictionary<string, object> child = ParseJSON(json, i, out cend);
+											if (arraylist != null)
+											{ 
+												arraylist.Add(child);
+											}
+											else
+											{ 
+												dict.Add(key.Trim(), child);
+												key = null;
+											}
+											i = cend;
+										}
+										continue;
+									case '}':
+										end = i;
+										if (key != null)
+										{
+											if (arraylist != null) dict.Add(key.Trim(), arraylist);
+											else dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
+										}
+										return dict;
+									case '[':
+										arraylist = new List<object>();
+										continue;
+									case ']':
+										if (key == null)
+										{
+											key = "array" + autoKey.ToString();
+											autoKey++;
+										}
+										if (arraylist != null && sb.Length > 0)
+										{
+											arraylist.Add(sb.ToString());
+											sb.Length = 0;
+										}
+										dict.Add(key.Trim(), arraylist);
+										arraylist = null;
+										key = null;
+										continue;
+									case ',':
+										if (arraylist == null && key != null)
+										{
+											dict.Add(key.Trim(), DecodeString(regex, sb.ToString().Trim()));
+											key = null;
+											sb.Length = 0;
+										}
+										if (arraylist != null && sb.Length > 0)
+										{
+											arraylist.Add(sb.ToString());
+											sb.Length = 0;
+										}
+										continue;
+									case ':':
+										key = DecodeString(regex, sb.ToString());
+										sb.Length = 0;
+										continue;
+								}
 							}
 						}
+						sb.Append(c);
+						if (escend) escbegin = false;
+						escend = escbegin ? true : false;
 					}
-					sb.Append(c);
-					if (escend) escbegin = false;
-					if (escbegin) escend = true;
-					else escend = false;
+					end = json.Length - 1;
 				}
-				end = json.Length - 1;
+				catch (Exception e)
+				{
+					System.Windows.Forms.MessageBox.Show("JsonMarkerParser : " + e.ToString());
+				}
+
 				return dict; //theoretically shouldn't ever get here
 			}
 
@@ -4634,10 +4894,230 @@ namespace PuvoxLibrary
 
 
 
+// net 3.5
+/*
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+ 
+namespace Read64bitRegistryFrom32bitApp
+{
+    public enum RegSAM
+    {
+        QueryValue = 0x0001,
+        SetValue = 0x0002,
+        CreateSubKey = 0x0004,
+        EnumerateSubKeys = 0x0008,
+        Notify = 0x0010,
+        CreateLink = 0x0020,
+        WOW64_32Key = 0x0200,
+        WOW64_64Key = 0x0100,
+        WOW64_Res = 0x0300,
+        Read = 0x00020019,
+        Write = 0x00020006,
+        Execute = 0x00020019,
+        AllAccess = 0x000f003f
+    }
+ 
+    public static class RegHive
+    {
+        public static UIntPtr HKEY_LOCAL_MACHINE = new UIntPtr(0x80000002u);
+        public static UIntPtr HKEY_CURRENT_USER = new UIntPtr(0x80000001u);
+    }
+ 
+    public static class RegistryWOW6432
+    {
+        #region Member Variables
+        #region Read 64bit Reg from 32bit app
+        [DllImport("Advapi32.dll")]
+        static extern uint RegOpenKeyEx(
+            UIntPtr hKey,
+            string lpSubKey,
+            uint ulOptions,
+            int samDesired,
+            out int phkResult);
+ 
+        [DllImport("Advapi32.dll")]
+        static extern uint RegCloseKey(int hKey);
+ 
+        [DllImport("advapi32.dll", EntryPoint = "RegQueryValueEx")]
+        public static extern int RegQueryValueEx(
+            int hKey, string lpValueName,
+            int lpReserved,
+            ref uint lpType,
+            System.Text.StringBuilder lpData,
+            ref uint lpcbData);
+        #endregion
+        #endregion
+ 
+        #region Functions
+        static public string GetRegKey64(UIntPtr inHive, String inKeyName, String inPropertyName)
+        {
+            return GetRegKey64(inHive, inKeyName, RegSAM.WOW64_64Key, inPropertyName);
+        }
+ 
+        static public string GetRegKey32(UIntPtr inHive, String inKeyName, String inPropertyName)
+        {
+            return GetRegKey64(inHive, inKeyName, RegSAM.WOW64_32Key, inPropertyName);
+        }
+ 
+        static public string GetRegKey64(UIntPtr inHive, String inKeyName, RegSAM in32or64key, String inPropertyName)
+        {
+            //UIntPtr HKEY_LOCAL_MACHINE = (UIntPtr)0x80000002;
+            int hkey = 0;
+ 
+            try
+            {
+                uint lResult = RegOpenKeyEx(RegHive.HKEY_LOCAL_MACHINE, inKeyName, 0, (int)RegSAM.QueryValue | (int)in32or64key, out hkey);
+                if (0 != lResult) return null;
+                uint lpType = 0;
+                uint lpcbData = 1024;
+                StringBuilder AgeBuffer = new StringBuilder(1024);
+                RegQueryValueEx(hkey, inPropertyName, 0, ref lpType, AgeBuffer, ref lpcbData);
+                string Age = AgeBuffer.ToString();
+                return Age;
+            }
+            finally
+            {
+                if (0 != hkey) RegCloseKey(hkey);
+            }
+        }
+        #endregion
+ 
+        #region Enums
+        #endregion
+    }
+}
 
 
 
 
+
+// =====  usage : 
+
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+ 
+namespace Read64bitRegistryFrom32bitApp
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            string value64 = RegistryWOW6432.GetRegKey64(RegHive.HKEY_LOCAL_MACHINE, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "RegisteredOrganization");
+            string value32 = RegistryWOW6432.GetRegKey32(RegHive.HKEY_LOCAL_MACHINE, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "RegisteredOrganization");
+        }
+    }
+}
+*/
+
+
+/*
+
+
+public static class RegistryExtensions
+{
+
+    public enum RegistryHiveType
+    {
+        X86,
+        X64
+    }
+
+    static Dictionary<RegistryHive, UIntPtr> _hiveKeys = new Dictionary<RegistryHive, UIntPtr> 
+    {
+        { RegistryHive.ClassesRoot, new UIntPtr(0x80000000u) },
+        { RegistryHive.CurrentConfig, new UIntPtr(0x80000005u) },
+        { RegistryHive.CurrentUser, new UIntPtr(0x80000001u) },
+        { RegistryHive.DynData, new UIntPtr(0x80000006u) },
+        { RegistryHive.LocalMachine, new UIntPtr(0x80000002u) },
+        { RegistryHive.PerformanceData, new UIntPtr(0x80000004u) },
+        { RegistryHive.Users, new UIntPtr(0x80000003u) }
+    };
+
+    static Dictionary<RegistryHiveType, RegistryAccessMask> _accessMasks = new Dictionary<RegistryHiveType, RegistryAccessMask> 
+    {
+        { RegistryHiveType.X64, RegistryAccessMask.Wow6464 },
+        { RegistryHiveType.X86, RegistryAccessMask.WoW6432 }
+    };
+
+    [Flags]
+    public enum RegistryAccessMask
+    {
+        QueryValue          = 0x0001,
+        SetValue            = 0x0002,
+        CreateSubKey        = 0x0004,
+        EnumerateSubKeys    = 0x0008,
+        Notify              = 0x0010,
+        CreateLink          = 0x0020,
+        WoW6432             = 0x0200,
+        Wow6464             = 0x0100,
+        Write               = 0x20006,
+        Read                = 0x20019,
+        Execute             = 0x20019,
+        AllAccess           = 0xF003F
+    }
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Auto)]
+    public static extern int RegOpenKeyEx
+    (
+      UIntPtr hKey,
+      string subKey,
+      uint ulOptions,
+      uint samDesired,
+      out IntPtr hkResult
+    );
+
+      public static RegistryKey OpenBaseKey(RegistryHive registryHive, RegistryHiveType registryType)
+    {
+        int result = -1;
+        UIntPtr hiveKey = _hiveKeys[registryHive];
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major > 5)
+        {
+            RegistryAccessMask flags = RegistryAccessMask.QueryValue | RegistryAccessMask.EnumerateSubKeys | RegistryAccessMask.Read;
+            IntPtr keyHandlePointer = IntPtr.Zero;
+            result = RegOpenKeyEx(hiveKey, String.Empty, 0, (uint) flags, out keyHandlePointer);
+            if (result == 0)
+            {
+                var safeRegistryHandleType = typeof (SafeHandleZeroOrMinusOneIsInvalid).Assembly.GetType("Microsoft.Win32.SafeHandles.SafeRegistryHandle");
+                var safeRegistryHandleConstructor = safeRegistryHandleType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] {typeof (IntPtr), typeof (bool)}, null); // .NET < 4
+                if (safeRegistryHandleConstructor == null)
+                    safeRegistryHandleConstructor = safeRegistryHandleType.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, new[] {typeof (IntPtr), typeof (bool)}, null); // .NET >= 4
+                var keyHandle = safeRegistryHandleConstructor.Invoke(new object[] {keyHandlePointer, true});
+                var net3Constructor = typeof (RegistryKey).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] {safeRegistryHandleType, typeof (bool)}, null);
+                var net4Constructor = typeof (RegistryKey).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] {typeof (IntPtr), typeof (bool), typeof (bool), typeof (bool), typeof (bool)}, null);
+                object key;
+                if (net4Constructor != null)
+                    key = net4Constructor.Invoke(new object[] {keyHandlePointer, true, false, false, hiveKey == _hiveKeys[RegistryHive.PerformanceData]});
+                else if (net3Constructor != null)
+                    key = net3Constructor.Invoke(new object[] {keyHandle, true});
+                else
+                {
+                    var keyFromHandleMethod = typeof (RegistryKey).GetMethod("FromHandle", BindingFlags.Static | BindingFlags.Public, null, new[] {safeRegistryHandleType}, null);
+                    key = keyFromHandleMethod.Invoke(null, new object[] {keyHandlePointer});
+                }
+                var field = typeof (RegistryKey).GetField("keyName", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (field != null)
+                    field.SetValue(key, String.Empty);
+                return (RegistryKey) key;
+            }
+            else if (result == 2) // The key does not exist.
+                return null;
+            throw new Win32Exception(result);
+        }
+        return null;
+    }
+}
+Example of usage:
+
+var key64 = RegistryExtensions.OpenBaseKey(RegistryHive.LocalMachine, RegistryExtensions.RegistryHiveType.X64);
+var keyPath = @"Software\\Bentley\\AutoPIPE\\V8i Ribbon and Reporting";
+var key = key64.OpenSubKey(keyPath);
+
+
+
+*/
 
 namespace PuvoxLibrary
 {
@@ -4711,4 +5191,241 @@ namespace PuvoxLibrary
 		private static ReaderWriterLock locker = new ReaderWriterLock();
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+namespace PuvoxLibrary
+{
+	public class Program
+	{
+		public string baseDomain;// = "https://puvox.software/";
+		public string apiBaseDomain= "https://license.puvox.software/";
+		public string baseResponsePath = "responses.php?";
+		public string baseCompanyName = "Puvox";
+		public string baseContactPath = "contact";
+		public string Name;
+		public string Slug;
+		public double Version;
+		public string Language;
+		public string BaseProductUrl;
+		public string RegRootOfThisProg;
+		public string responseUrl; 
+		public string contactUrl;
+		public bool initialized;
+
+		public static void m(object obj) { PuvoxLibrary.Methods.m( obj.ToString() ); }
+		public static void cl(object obj) { Console.WriteLine(obj == null ? "null" : obj.ToString()); System.Diagnostics.Debug.WriteLine(obj == null ? "null" : obj.ToString()); }
+		private bool isDevelopment { get { return PuvoxLibrary.Methods.IsDeveloperMachine(); } }
+
+		public Program()
+		{
+		}
+
+		public Program(string companyName_, string domain_, string title, string slug, double version, string language, string productUrl)
+		{
+			baseCompanyName = companyName_;
+			baseDomain = domain_;
+			Name = title;
+			Slug = slug;
+			Version = version;
+			Language = language;
+			BaseProductUrl = productUrl;
+			RegRootOfThisProg = "SOFTWARE\\" + baseCompanyName + "\\" + Slug + "\\"; 
+																		
+			contactUrl = baseDomain + baseContactPath;
+			initialized = true;
+		}
+ 
+					  
+   
+	  
+	
+																																			   
+	
+   
+   
+   
+  
+									   
+   
+															
+			   
+   
+
+		public string ResponseString = "";
+		public Dictionary<string, object> ResponseHeaders = new Dictionary<string, object>();
+		Dictionary<string, object> ResponseData = new Dictionary<string, object>();
+		public Dictionary<string, object> IpInfo;
+   
+
+																		  
+  
+		public Dictionary<string, object> initialize_response()
+											   
+		{
+	  
+	
+			getResponseData(true, 0);
+			return ResponseData;
+	
+	  
+	
+						 
+	
+		}
+
+		//props
+		public string ApiURL()			{ return apiBaseDomain + baseResponsePath + "program=" + PuvoxLibrary.Methods.urlEncode(Slug) + "&version=" + Version; }
+		public bool licensekeySet(string key) { setRegistryValue("licensekey", key); return true; } 
+		public string licensekeyGet() 	{ return getRegistryValue("licensekey", "demo_" + PuvoxLibrary.Methods.RandomString(32)); }
+		internal string status()	{ return ResponseHeaders["status"] as string; } 
+		internal bool licenseAllowed()	{ return ResponseHeaders["status"] as string == "success"; }  //|| ResponseData["confirm_answer"].ToString().Contains("u2")
+		public string licenseErrorMessage() { return ResponseHeaders["status"] as string + ":"+ResponseHeaders["data"] as string; }
+		public bool isDemo()			{ return licensekeyGet().Contains("demo_"); }
+		public string version()			{ return ResponseData["version"] as string; }
+		internal string confirmAnswer()	{ return ResponseData["confirm_answer"] as string; }
+		internal string country()	{ return IpInfo["country"] as string; }
+
+
+		public bool getResponseData(bool forceNew, int cachedMinutes_)
+		{
+			bool fire = false;
+			if (ResponseData == null || ResponseData.Count==0)
+			{
+				fire = true;
+			}
+			else if (forceNew)
+			{
+				fire = true;
+			}
+			//
+			if (fire)
+			{
+				string currentIPinfo = getRegistryValue("ipinfo", "");
+				string responseUrl = ApiURL() + "&action=check&license=" + licensekeyGet() + "&ipinfo=" + (currentIPinfo == "" ? "1" : "0");
+	 
+																	
+	 
+		
+	 
+				var text = PuvoxLibrary.Methods.urlRead(responseUrl);// Methods.cachedCall("PuvoxLibrary.Methods.urlRead", new object[] { responseUrl }, 20);
+																																 
+																   
+	 
+				if (text == "-1") return false;
+
+				ResponseString = text;
+	 
+							   
+				ResponseHeaders = PuvoxLibrary.Methods.deserialize(text);
+				string dataString = (ResponseHeaders["enchint"] as string == "") ? ResponseHeaders["data"] as string : PuvoxLibrary.Methods.DecryptString(ResponseHeaders["data"] as string, Slug + ResponseHeaders["enchint"] + Version.ToString());
+				ResponseData = PuvoxLibrary.Methods.deserialize(dataString);
+
+				string ipinfoString = (currentIPinfo != "") ? currentIPinfo : ResponseData["ipinfo"].ToString();
+				IpInfo = PuvoxLibrary.Methods.deserialize(ipinfoString);
+				setRegistryValue("ipinfo", ipinfoString);
+			}
+			return true;
+		}
+							 
+  
+								
+   
+										  
+   
+
+
+ 
+		public bool updateAvailable()
+		{
+			bool result;
+			try
+			{
+				result = (ResponseData["version"].ToString() != Version.ToString());
+			}
+			catch (Exception)
+			{
+				result = false;
+			}
+			return result;
+		}
+
+
+		public Dictionary<string, string> RegistryValuesInFolder()
+		{
+			return PuvoxLibrary.Methods.RegistryValuesInFolder(RegRootOfThisProg);
+		}
+		public string getRegistryValue(string key, string two)
+		{
+			return PuvoxLibrary.Methods.getRegistryValue(RegRootOfThisProg + key, two);
+		}
+		public bool setRegistryValue(string key, string value)
+		{
+			PuvoxLibrary.Methods.setRegistryValue(RegRootOfThisProg + key, value);
+			return true;
+		}
+
+		public bool isCacheSet(string key, int minutes)
+		{
+			return PuvoxLibrary.Methods.isCacheSet( @"Software\Puvox\"+Slug+@"\cachedTimegones\"+key, minutes);
+		}
+
+		public bool fillFormOptions(Control.ControlCollection coll)
+		{
+			return PuvoxLibrary.Methods.fillFormOptions(coll, RegRootOfThisProg);
+		}  
+		public bool saveFormOptions(System.Windows.Forms.Control.ControlCollection cts)
+		{
+			return PuvoxLibrary.Methods.saveFormOptions(cts, RegRootOfThisProg);
+		}
+
+		public string getFormOption(string key, string two)
+		{
+			return PuvoxLibrary.Methods.getFormOption(key, two, RegRootOfThisProg);
+		}
+
+
+	}
+}
+
+
+
+
+
+
+
 
