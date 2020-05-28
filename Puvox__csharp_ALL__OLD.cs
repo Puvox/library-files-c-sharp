@@ -4696,20 +4696,7 @@ namespace PuvoxLibrary
 			initialized = true;
 		}
  
-					  
-   
-	  
-	
-																																			   
-	
-   
-   
-   
-  
-									   
-   
-															
-			   
+
    
 
 		public string ResponseString = "";

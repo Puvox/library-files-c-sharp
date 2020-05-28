@@ -22,16 +22,16 @@ using System.Threading;
 using System.Timers;
 using System.Web.Script.Serialization;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Win32;
 /*
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using NinjaTrader.Cbi;
 using NinjaTrader.Code;
 using NinjaTrader.Core;
@@ -48,7 +48,6 @@ using SharpDX;
 using SharpDX.Direct2D1;
 using SharpDX.DirectWrite;
 */
-
 
 
 
@@ -77,6 +76,19 @@ namespace PuvoxLibrary
 		public static string mainDrive { get { return Path.GetPathRoot(Environment.SystemDirectory); } }
 
 
+
+		public static string AppNameRegex = "(XYZXYZ)";
+		public static string developerMachineString = "puvox_development_machine";
+
+
+		private Dictionary<string, string> symbols = new Dictionary<string, string>
+		{
+			{ "checkmark", "?" },
+			{ "checkmark2", "\ud83d\uddf9" }
+		};
+
+
+
 		#region Demo(Trial) period checks
 		public static bool initialized;
 		public static bool workTillDate(string program_slug, string dateTill)
@@ -101,19 +113,10 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-
-
-		public static string AppNameRegex = "(XYZXYZ)";
-		public static string developerMachineString = "puvox_development_machine";
-
-
-		private Dictionary<string, string> symbols = new Dictionary<string, string>
-		{
-			{ "checkmark", "?" },
-			{ "checkmark2", "\ud83d\uddf9" }
-		};
-
-
+		
+		
+		
+		// if (demoPeriodGone("demo expired", "2020-05-13")) return;
 		private static bool demoPeriodGone_shown;
 		private static bool demoPeriodGone_disallow;
 		// "yyyy-MM-dd"
@@ -231,41 +234,7 @@ namespace PuvoxLibrary
 
 		public static int DateToTime(DateTime dt) { return dt.Hour * 100 + dt.Minute; }
 
-
-		//i.e.    IsTimePeriod("start"
-		public static bool IsTimePeriod(string type_, DateTime time1, DateTime time0, int StartTime, int EndTime, bool useDayOrSession, bool Bars_IsFirstBarOfSession)
-		{
-			int curTime_0 = DateToTime(time0);
-			int curTime_1 = DateToTime(time1);
-			bool SameDay = StartTime < EndTime;
-			bool NotSameDay = StartTime > EndTime;
-
-			bool IsNewDay = useDayOrSession ? time0.DayOfYear != time1.DayOfYear : Bars_IsFirstBarOfSession;
-			bool isStart =
-				(curTime_0 >= StartTime && (curTime_1 < StartTime || IsNewDay))
-							||
-				(IsNewDay && curTime_1 <= StartTime);
-
-			bool is_inside =
-					(SameDay && (curTime_0 >= StartTime && curTime_0 <= EndTime))
-						||
-					(NotSameDay && (curTime_0 >= StartTime || curTime_0 <= EndTime));
-			bool was_inside =
-				(SameDay && (curTime_1 >= StartTime && curTime_1 <= EndTime))
-					||
-				(NotSameDay && (curTime_1 >= StartTime || curTime_1 <= EndTime));
-
-
-			if (type_ == "start")
-				return isStart;
-			else if (type_ == "inside")
-				return is_inside;
-			else if (type_ == "end")
-				return (!is_inside && was_inside);
-
-			return false;
-		}
-
+	  
 		public static string DateToTimeString(DateTime dt)
 		{
 			return (dt.Hour < 10 ? "0" : "") + dt.Hour.ToString() + ":" + (dt.Minute < 10 ? "0" : "") + dt.Minute.ToString();
@@ -735,15 +704,15 @@ namespace PuvoxLibrary
 
 
 
-		public static Color color_from_hex(string hex_str)
+		public static System.Drawing.Color color_from_hex(string hex_str)
 		{
-			return (Color)System.Drawing.ColorTranslator.FromHtml(hex_str);
+			return (System.Drawing.Color)System.Drawing.ColorTranslator.FromHtml(hex_str);
 		}
 
 		//Color.FromArgb(newAlpha, mycolor);   Color.FromArgb(A, color.R, color.G, color.B);
 		public static System.Windows.Forms.Timer BlinkTimer;
-		public static Color initialColor;
-		public static void blink(bool startOrStop, System.Windows.Forms.Control ctrl, Color c1, Color c2, int cycleLength_MS, bool BkClr)
+		public static System.Drawing.Color initialColor;
+		public static void blink(bool startOrStop, System.Windows.Forms.Control ctrl,  System.Drawing.Color c1,  System.Drawing.Color c2, int cycleLength_MS, bool BkClr)
 		{
 			if (ctrl.InvokeRequired)
 			{
@@ -752,47 +721,48 @@ namespace PuvoxLibrary
 			else
 			{
 				initialColor = BkClr ? ctrl.BackColor : ctrl.ForeColor;
-
-				//is called in new thread in eventhandler
-				void timer_Tick(object sender, EventArgs e)
-				{
-					if (BkClr)
-					{
-						var color = ctrl.BackColor != c1 ? c1 : c2;
-						for(var i=0; i<10; i++)
-						{
-							Thread.Sleep(cycleLength_MS/10);
-							ctrl.BackColor = Color.FromArgb((255/10)*i, color.R, color.G, color.B);
-						}
-						ctrl.BackColor = color;
-					}
-					else
-					{
-						var color = ctrl.ForeColor != c1 ? c1 : c2; 
-						ctrl.ForeColor = color;
-					}
-				}
-
+ 
 				if (startOrStop)
 				{
 					if (BlinkTimer == null)
 					{
+						//is called in new thread in eventhandler
+						var Blink_timer_Tick = new Action<object, EventArgs>((object sender, EventArgs e)=> { 
+							{
+								if (BkClr)
+								{
+									var color = ctrl.BackColor != c1 ? c1 : c2;
+									for(var i=0; i<10; i++)
+									{
+										Thread.Sleep(cycleLength_MS/10);
+										ctrl.BackColor = System.Drawing.Color.FromArgb((255/10)*i, color.R, color.G, color.B);
+									}
+									ctrl.BackColor = color;
+								}
+								else
+								{
+									var color = ctrl.ForeColor != c1 ? c1 : c2; 
+									ctrl.ForeColor = color;
+								}
+							}
+						});
 						BlinkTimer = new System.Windows.Forms.Timer();
 						BlinkTimer.Interval = cycleLength_MS;
 						BlinkTimer.Enabled = false;
 						BlinkTimer.Start();
-						BlinkTimer.Tick += new EventHandler(timer_Tick);
+						BlinkTimer.Tick += new EventHandler(Blink_timer_Tick);
 					}
 				}
 				else
 				{
 					if (BkClr) ctrl.BackColor = initialColor; else ctrl.ForeColor = initialColor;
 					BlinkTimer.Stop();
-					BlinkTimer.Tick -= timer_Tick;
+					//BlinkTimer.Tick -= Blink_timer_Tick;
 					BlinkTimer = null;
 				}
 			}
 		}
+		
 
 		/*
 				public static bool blinkActive = false;
@@ -1596,7 +1566,7 @@ namespace PuvoxLibrary
 		// https://stackoverflow.com/questions/3840762/how-do-you-urlencode-without-using-system-web 
 		public static string urlEncode(string msg)
 		{
-			return Uri.EscapeDataString(msg); //.Replace("%20", "+");
+			return Uri.EscapeDataString(msg); //.Replace("%20", "+"); //4.5+ WebUtility.UrlEncode
 		}
 
 		public static int countWords(string str)
@@ -1668,7 +1638,12 @@ namespace PuvoxLibrary
 			return finalString;
 		}
 
-
+		public static int GenerateRandom(int min, int max)
+		{
+		    var seed = Convert.ToInt32(System.Text.RegularExpressions.Regex.Match(Guid.NewGuid().ToString(), @"\d+").Value);
+		    return new Random(seed).Next(min, max);
+		}
+		
 
 		public static string DateToSeconds(DateTime date)
 		{
@@ -1770,13 +1745,66 @@ namespace PuvoxLibrary
 
 
 		#region Encrypt/Decrypt
-		// encryption 
-		public static string EncryptString(string plainText, string password)
+		public static class EncryptDecrypt
 		{
-			try
+			// encryption 
+			public static string EncryptString(string plainText, string secterKey)
+			{
+				CryptoStream cryptoStream; MemoryStream memoryStream;
+				this.helper__encrypt_decrypt_stream(out cryptoStream, out memoryStream, secterKey);
+				string encryptedText = String.Empty;
+				try
+				{
+					byte[] plainBytes = Encoding.ASCII.GetBytes(plainText); 	// Convert the plainText string into a byte array
+					cryptoStream.Write(plainBytes, 0, plainBytes.Length);  		// Encrypt the input plaintext string
+					cryptoStream.FlushFinalBlock();                         	// Complete the encryption process
+					byte[] cipherBytes = memoryStream.ToArray();            	// Convert the encrypted data from a MemoryStream to a byte array
+
+					encryptedText = Convert.ToBase64String(cipherBytes, 0, cipherBytes.Length);  // Convert the encrypted byte array to a base64 encoded string
+				}
+				catch (Exception e)
+				{
+					return e.Message;
+				}
+				finally
+				{
+					memoryStream.Close();
+					cryptoStream.Close();
+				}
+				return encryptedText;
+			}
+
+			public static string DecryptString(string encryptedText, string secterKey)
+			{
+				
+				CryptoStream cryptoStream; MemoryStream memoryStream;
+				this.helper__encrypt_decrypt_stream(out cryptoStream, out memoryStream, secterKey);
+				string plainText = String.Empty;
+				try
+				{
+					byte[] cipherBytes = Convert.FromBase64String(encryptedText);// Convert the encryptedText string into a byte array
+					cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);		// Decrypt the input encryptedText string
+					cryptoStream.FlushFinalBlock();              				// Complete the decryption process
+					byte[] plainBytes = memoryStream.ToArray();					// Convert the decrypted data from a MemoryStream to a byte array
+					
+					plainText = Encoding.ASCII.GetString(plainBytes, 0, plainBytes.Length); // Convert the decrypted byte array to string
+				}
+				catch (Exception e)
+				{
+					return e.Message;
+				}
+				finally
+				{
+					memoryStream.Close();
+					cryptoStream.Close();
+				}
+				return plainText;
+			}
+			 
+			public static void helper__encrypt_decrypt_stream(out MemoryStream memoryStream, out CryptoStream cryptoStream, string secterKey)
 			{
 				SHA256 mySHA256 = SHA256Managed.Create();
-				byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(password));
+				byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(secterKey));
 				byte[] iv = new byte[16] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
 				// string symmetric encryption
 				Aes encryptor = Aes.Create();
@@ -1785,67 +1813,12 @@ namespace PuvoxLibrary
 				encryptor.Key = key;
 				encryptor.IV = iv;
 
-				MemoryStream memoryStream = new MemoryStream();
-				ICryptoTransform aesEncryptor = encryptor.CreateEncryptor();
-				CryptoStream cryptoStream = new CryptoStream(memoryStream, aesEncryptor, CryptoStreamMode.Write); // write to memory stream
-				byte[] plainBytes = Encoding.ASCII.GetBytes(plainText); // Convert the plainText string into a byte array
-				cryptoStream.Write(plainBytes, 0, plainBytes.Length);   // Encrypt the input plaintext string
-				cryptoStream.FlushFinalBlock();                         // Complete the encryption process
-				byte[] cipherBytes = memoryStream.ToArray();            // Convert the encrypted data from a MemoryStream to a byte array
-
-				memoryStream.Close();
-				cryptoStream.Close();
-				string cipherText = Convert.ToBase64String(cipherBytes, 0, cipherBytes.Length);  // Convert the encrypted byte array to a base64 encoded string
-
-				return cipherText;
-			}
-			catch (Exception e)
-			{
-				return e.Message;
-			}
-		}
-
-
-		public static string DecryptString(string cipherText, string password)
-		{
-			try
-			{
-				SHA256 mySHA256 = SHA256Managed.Create();
-				byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(password));
-				byte[] iv = new byte[16] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
-				// Instantiate a new Aes object to perform string symmetric encryption
-				Aes encryptor = Aes.Create();
-				encryptor.Mode = CipherMode.CBC;
-				//encryptor.KeySize = 256;  encryptor.BlockSize = 128;  encryptor.Padding = PaddingMode.Zeros;
-				encryptor.Key = key;
-				encryptor.IV = iv;
-
-				MemoryStream memoryStream = new MemoryStream();
-				ICryptoTransform aesDecryptor = encryptor.CreateDecryptor();
-				CryptoStream cryptoStream = new CryptoStream(memoryStream, aesDecryptor, CryptoStreamMode.Write);  //write it to  memory stream
-				string plainText = String.Empty;
-				try
-				{
-					byte[] cipherBytes = Convert.FromBase64String(cipherText);  // Convert the ciphertext string into a byte array
-					cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);      // Decrypt the input ciphertext string
-					cryptoStream.FlushFinalBlock();              // Complete the decryption process
-					byte[] plainBytes = memoryStream.ToArray(); // Convert the decrypted data from a MemoryStream to a byte array
-					plainText = Encoding.ASCII.GetString(plainBytes, 0, plainBytes.Length); // Convert the decrypted byte array to string
-				}
-				catch (Exception e) { System.Windows.Forms.MessageBox.Show("Problem in encryption. ErrorCode 274. " + e.Message); }
-				finally
-				{
-					memoryStream.Close();
-					cryptoStream.Close();
-				}
-				return plainText;
-			}
-			catch (Exception e)
-			{
-				return e.Message;
+				memoryStream = new MemoryStream();
+				cryptoStream = new CryptoStream(memoryStream, encryptor.CreateEncryptor(), CryptoStreamMode.Write); // write to memory stream
 			}
 		}
 		#endregion
+
 
 		//if (isDevelopment)  Console.OutputEncoding = Encoding.UTF8;   
 
@@ -2470,24 +2443,46 @@ namespace PuvoxLibrary
 
 		public static string urlRead(string url)
 		{
-			string responseText = "-1";
 			try
 			{
-				// HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-				// //req.AutomaticDecompression = DecompressionMethods.GZip;
-				// using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
-				// using (StreamReader reader = new StreamReader(res.GetResponseStream(), ASCIIEncoding.ASCII))
-				// responseText = reader.ReadToEnd(); 
-				using (WebClient wc = new WebClient())
+				var request = (System.Net.HttpWebRequest) System.Net.HttpWebRequest.Create(url);
+				request.UserAgent= "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET4.0C; .NET4.0E)";
+				using (var response = request.GetResponse())
 				{
-					wc.Encoding = Encoding.UTF8;
-					//  new StreamReader(wc.OpenRead("http://your_website.com"));
-					responseText = wc.DownloadString(url);
+				    return new System.IO.StreamReader(response.GetResponseStream()).ReadToEnd();
 				}
+			} 
+			catch (System.Net.WebException ex)
+	        {
+	            var sr = new System.IO.StreamReader(ex.Response.GetResponseStream());
+	            return sr.ReadToEnd();
+	        }
+			catch(Exception e){
+				return "UrlRead Error:"+e.Message;
 			}
-			catch (Exception e) { return ("Error:" + e.ToString()); }
-			return responseText;
 		}
+
+        //(System.IO.File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/debug.txt"))
+        public static string urlRead2(string url)
+        {
+            string responseText = "-1";
+            try
+            {
+                // HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+                // //req.AutomaticDecompression = DecompressionMethods.GZip;
+                // using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
+                // using (StreamReader reader = new StreamReader(res.GetResponseStream(), ASCIIEncoding.ASCII))
+                // responseText = reader.ReadToEnd(); 
+                using (System.Net.WebClient wc = new System.Net.WebClient())
+                {
+                    wc.Encoding = Encoding.UTF8;
+                    //  new StreamReader(wc.OpenRead("http://your_website.com"));
+                    responseText = wc.DownloadString(url);
+                }
+            }
+            catch (Exception e) { return ("Error:" + e.ToString()); }
+            return responseText;
+        }
 
 		// wb.DocumentCompleted += wb_DocumentCompleted;
 		//  private void wb_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
@@ -5314,7 +5309,7 @@ namespace PuvoxLibrary
 		public string licensekeyGet() 	{ return getRegistryValue("licensekey", "demo_" + PuvoxLibrary.Methods.RandomString(32)); }
 		internal string status()	{ return ResponseHeaders["status"] as string; } 
 		internal bool licenseAllowed()	{ return ResponseHeaders["status"] as string == "success"; }  //|| ResponseData["confirm_answer"].ToString().Contains("u2")
-		public string licenseErrorMessage() { return ResponseHeaders["status"] as string + ":"+ResponseHeaders["data"] as string; }
+		public string licenseErrorMessage() { return (ResponseHeaders["status"] as string) + ":"+ (ResponseHeaders["data"] as string); }
 		public bool isDemo()			{ return licensekeyGet().Contains("demo_"); }
 		public string version()			{ return ResponseData["version"] as string; }
 		internal string confirmAnswer()	{ return ResponseData["confirm_answer"] as string; }
@@ -5404,7 +5399,7 @@ namespace PuvoxLibrary
 			return PuvoxLibrary.Methods.isCacheSet( @"Software\Puvox\"+Slug+@"\cachedTimegones\"+key, minutes);
 		}
 
-		public bool fillFormOptions(Control.ControlCollection coll)
+		public bool fillFormOptions(System.Windows.Forms.Control.ControlCollection coll)
 		{
 			return PuvoxLibrary.Methods.fillFormOptions(coll, RegRootOfThisProg);
 		}  
