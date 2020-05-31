@@ -1,9 +1,11 @@
+
+// https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/preprocessor-directives/preprocessor-if
+// preprocessor directives: https://stackoverflow.com/questions/38476796/how-to-set-net-core-in-if-statement-for-compilation
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -20,17 +22,15 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Timers;
-using System.Web.Script.Serialization;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
+using System.Windows.Forms;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Win32;
+
+
 /*
 using NinjaTrader.Cbi;
 using NinjaTrader.Code;
@@ -1751,7 +1751,7 @@ namespace PuvoxLibrary
 			public static string EncryptString(string plainText, string secterKey)
 			{
 				CryptoStream cryptoStream; MemoryStream memoryStream;
-				this.helper__encrypt_decrypt_stream(out cryptoStream, out memoryStream, secterKey);
+				helper__encrypt_decrypt_stream(out memoryStream, out cryptoStream, secterKey);
 				string encryptedText = String.Empty;
 				try
 				{
@@ -1778,7 +1778,7 @@ namespace PuvoxLibrary
 			{
 				
 				CryptoStream cryptoStream; MemoryStream memoryStream;
-				this.helper__encrypt_decrypt_stream(out cryptoStream, out memoryStream, secterKey);
+				helper__encrypt_decrypt_stream(out memoryStream, out cryptoStream, secterKey);
 				string plainText = String.Empty;
 				try
 				{
@@ -5347,7 +5347,7 @@ namespace PuvoxLibrary
 	 
 							   
 				ResponseHeaders = PuvoxLibrary.Methods.deserialize(text);
-				string dataString = (ResponseHeaders["enchint"] as string == "") ? ResponseHeaders["data"] as string : PuvoxLibrary.Methods.DecryptString(ResponseHeaders["data"] as string, Slug + ResponseHeaders["enchint"] + Version.ToString());
+				string dataString = (ResponseHeaders["enchint"] as string == "") ? ResponseHeaders["data"] as string : PuvoxLibrary.Methods.EncryptDecrypt.DecryptString(ResponseHeaders["data"] as string, Slug + ResponseHeaders["enchint"] + Version.ToString());
 				ResponseData = PuvoxLibrary.Methods.deserialize(dataString);
 
 				string ipinfoString = (currentIPinfo != "") ? currentIPinfo : ResponseData["ipinfo"].ToString();
