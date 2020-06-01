@@ -53,6 +53,47 @@ namespace PuvoxLibrary
 
 
         /*
+		
+		
+		public string selectedLang = "en";
+		public Dictionary<string, Dictionary<string, string>> transl_texts;
+		public string translate(string txt)
+		{
+			if (transl_texts.ContainsKey(txt) && transl_texts[txt].ContainsKey(selectedLang))
+			{
+				return transl_texts[txt][selectedLang];
+			}
+			return translatedReady(selectedLang, txt);
+		}
+
+
+
+
+		public string translatedReady(string targetLang, string englishValue)
+		{
+			string text = englishValue;
+			string key = "translReady_" + md5(englishValue) + "_" + targetLang;
+			if (targetLang != "en")
+			{
+				string registryValue = getRegistryValue(key);
+				if (registryValue == null)
+				{
+					text = GTranslate_checker(englishValue, targetLang);
+					setRegistryValue(key, text);
+				}
+				else
+				{
+					text = registryValue;
+				}
+			}
+			else
+			{
+				setRegistryValue(key, englishValue);
+			}
+			return text;
+		}
+		
+		
        public string getTranslateCode(string desiredLang)
        {
            if (!desiredLang)
