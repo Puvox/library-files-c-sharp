@@ -29,9 +29,15 @@ using System.Xml.Linq;
 using System.Xml.Serialization;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Win32;
+using System.Threading.Tasks;
 
 
 /*
+
+https://ninjatrader.com/support/helpGuides/nt8/?multi-threading.htm
+https://stackoverflow.com/questions/16760689/how-many-threads-can-ran-on-a-cpu-at-a-time
+
+
 using NinjaTrader.Cbi;
 using NinjaTrader.Code;
 using NinjaTrader.Core;
@@ -56,7 +62,7 @@ using SharpDX.DirectWrite;
 namespace PuvoxLibrary
 {
 	public partial class Methods
-	{     
+	{
 		#region DateTime
 
 		//  0940 type time-ints
@@ -90,37 +96,11 @@ namespace PuvoxLibrary
 
 
 		#region Demo(Trial) period checks
-		public static bool initialized;
-		public static bool workTillDate(string program_slug, string dateTill)
-		{
-			bool result;
-			try
-			{
-				if (dateTill != "" && DateTime.Now > DateTime.ParseExact(dateTill, "yyyy-MM-dd", CultureInfo.InvariantCulture))
-				{
-					bool flag = initialized;
-					//if (mainResponse.ContainsKey("error_message") || mainResponse["error_message"] != "")
-					{
-					//	m(mainResponse["error_message"]);
-						return false;
-					}
-				}
-				result = true;
-			}
-			catch (Exception)
-			{
-				result = false;
-			}
-			return result;
-		}
-		
-		
-		
 		// if (demoPeriodGone("demo expired", "2020-05-13")) return;
-		private static bool demoPeriodGone_shown;
-		private static bool demoPeriodGone_disallow;
+		private bool demoPeriodGone_shown;
+		private bool demoPeriodGone_disallow;
 		// "yyyy-MM-dd"
-		public static bool demoPeriodGone(string message, string dateTill)
+		public bool demoPeriodGone(string message, string dateTill)
 		{
 			if (demoPeriodGone_shown)
 			{
@@ -142,6 +122,34 @@ namespace PuvoxLibrary
 			}
 			return demoPeriodGone_disallow;
 		}
+
+
+		public static bool initialized;
+		public static bool workTillDate(string program_slug, string dateTill)
+		{
+			bool result;
+			try
+			{
+				if (dateTill != "" && DateTime.Now > DateTime.ParseExact(dateTill, "yyyy-MM-dd", CultureInfo.InvariantCulture))
+				{
+					bool flag = initialized;
+					//if (mainResponse.ContainsKey("error_message") || mainResponse["error_message"] != "")
+					{
+						//	m(mainResponse["error_message"]);
+						return false;
+					}
+				}
+				result = true;
+			}
+			catch (Exception)
+			{
+				result = false;
+			}
+			return result;
+		}
+
+
+
 		#endregion
 
 
@@ -173,9 +181,7 @@ namespace PuvoxLibrary
 		}
 
 
-		 
-		private static string ProgramName_ = "";
-		public static string ProgramName { get { if (ProgramName_ == "") { m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); } return ProgramName_; } set { ProgramName_ = value; } }
+
 
 
 		//  =============== Datetime Extensions   ================//
@@ -234,7 +240,7 @@ namespace PuvoxLibrary
 
 		public static int DateToTime(DateTime dt) { return dt.Hour * 100 + dt.Minute; }
 
-	  
+
 		public static string DateToTimeString(DateTime dt)
 		{
 			return (dt.Hour < 10 ? "0" : "") + dt.Hour.ToString() + ":" + (dt.Minute < 10 ? "0" : "") + dt.Minute.ToString();
@@ -283,38 +289,38 @@ namespace PuvoxLibrary
 			if (text == "") return "";
 
 			// ===== long / short
-			else if(text=="LONG")	return "SHORT";
-			else if(text=="SHORT")	return "LONG";
-			else if(text=="Long")	return "Short";
-			else if(text=="Short")	return "Long";
-			else if(text=="long")	return "short";
-			else if(text=="short")	return "long";
+			else if (text == "LONG") return "SHORT";
+			else if (text == "SHORT") return "LONG";
+			else if (text == "Long") return "Short";
+			else if (text == "Short") return "Long";
+			else if (text == "long") return "short";
+			else if (text == "short") return "long";
 			//
-			else if(text=="L")		return "S";
-			else if(text=="S")		return "L";
-			else if(text=="l")		return "s";
-			else if(text=="s")		return "l";
-			
+			else if (text == "L") return "S";
+			else if (text == "S") return "L";
+			else if (text == "l") return "s";
+			else if (text == "s") return "l";
+
 			// ===== buy / sell
-			else if(text=="BUY")	return "SELL";
-			else if(text=="SELL")	return "BUY";
-			else if(text=="Buy")	return "Sell";
-			else if(text=="Sell")	return "Buy";
-			else if(text=="buy")	return "sell";
-			else if(text=="sell")	return "buy";
+			else if (text == "BUY") return "SELL";
+			else if (text == "SELL") return "BUY";
+			else if (text == "Buy") return "Sell";
+			else if (text == "Sell") return "Buy";
+			else if (text == "buy") return "sell";
+			else if (text == "sell") return "buy";
 			//
-			else if(text=="B")		return "S";
-			else if(text=="S")		return "B";
-			else if(text=="b")		return "s";
-			else if(text=="s")		return "b";
-			
+			else if (text == "B") return "S";
+			else if (text == "S") return "B";
+			else if (text == "b") return "s";
+			else if (text == "s") return "b";
+
 			// ===== above / below
-			else if(text=="ABOVE")	return "BELOW";
-			else if(text=="BELOW")	return "ABOVE";
-			else if(text=="Above")	return "Below";
-			else if(text=="Below")	return "Above";
-			else if(text=="above")	return "below";
-			else if(text=="below")	return "above";
+			else if (text == "ABOVE") return "BELOW";
+			else if (text == "BELOW") return "ABOVE";
+			else if (text == "Above") return "Below";
+			else if (text == "Below") return "Above";
+			else if (text == "above") return "below";
+			else if (text == "below") return "above";
 
 			return "";
 		}
@@ -560,55 +566,6 @@ namespace PuvoxLibrary
 
 
 
-
-
-
-		public bool fillFormOptions(System.Windows.Forms.Control.ControlCollection cts)
-		{
-			foreach (object obj in cts)
-			{
-				System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
-				if (control != null && isUserInput(control))
-				{
-					string defaultVal;
-					if (control is System.Windows.Forms.CheckBox)
-					{
-						defaultVal = ((System.Windows.Forms.CheckBox)control).Checked.ToString();
-					}
-					else
-					{
-						defaultVal = control.Text;
-					}
-					control.Text = getRegistryValue(optionsPrefix + control.Name, defaultVal, false);
-				}
-			}
-			return true;
-		}
-
-
-		public bool saveFormOptions(System.Windows.Forms.Control.ControlCollection cts)
-		{
-			foreach (object obj in cts)
-			{
-				System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
-				if (control != null && isUserInput(control))
-				{
-					string value;
-					if (control is System.Windows.Forms.CheckBox)
-					{
-						value = ((System.Windows.Forms.CheckBox)control).Checked.ToString();
-					}
-					else
-					{
-						value = control.Text;
-					}
-					setRegistryValue(optionsPrefix + control.Name, value);
-				}
-			}
-			return true;
-		}
-
-
 		//new NameValueCollection {  {"param1", "<any> kinds & of = ? strings" },  {"param2", "escaping is already handled" }   }
 		public string urlPost(string url, NameValueCollection nv)
 		{
@@ -806,7 +763,13 @@ namespace PuvoxLibrary
 
 
 
-
+		public static void ListViewAsListBox(ListView listView)
+		{
+			listView.View = View.Details;
+			listView.HeaderStyle = ColumnHeaderStyle.None;
+			listView.FullRowSelect = true;
+			listView.Columns.Add("", -2);
+		}
 
 
 
@@ -821,22 +784,24 @@ namespace PuvoxLibrary
 
 
 
+
+		// Order by values.
+		//var items = from pair in dict      orderby pair.Value ascending       select pair;
+		// foreach (KeyValuePair<string, int> pair in items)  {  Console.WriteLine("{0}: {1}", pair.Key, pair.Value);  }
+		//return items.ToDictionary(x => x, x => x);try
 		public static Dictionary<string, string> SortDict(Dictionary<string, string> dict)
 		{
-			// Order by values.
-			//var items = from pair in dict      orderby pair.Value ascending       select pair;
-			// foreach (KeyValuePair<string, int> pair in items)  {  Console.WriteLine("{0}: {1}", pair.Key, pair.Value);  }
-			//return items.ToDictionary(x => x, x => x);try
-			try
-			{
-				return (Dictionary<string, string>)(from entry in dict orderby entry.Value ascending select entry);
-			}
-			catch //(Exception e)
-			{
-				return new Dictionary<string, string> { };
-			}
 
+			return (Dictionary<string, string>)(from entry in dict orderby entry.Value ascending select entry);
+			//catch //(Exception e) { return new Dictionary<string, string> { }; }
 		}
+
+		public static Dictionary<string, int> SortDict(Dictionary<string, int> dict)
+		{
+			return dict.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+		}
+
+
 
 		public static bool ContainsValue(Dictionary<int, double> myd, int indx) { return myd.ContainsKey(indx) && myd[indx] != double.NaN && HasValue(myd[indx]); }
 		public static bool ContainsValue(Dictionary<int, bool> myd, int indx) { return myd.ContainsKey(indx); }
@@ -981,7 +946,7 @@ namespace PuvoxLibrary
 		{
 			try
 			{
-				return HelperLibraries.JsonMaker.DeserializeJson(str); 
+				return HelperLibraries.JsonMaker.DeserializeJson(str);
 			}
 			catch (Exception)
 			{
@@ -1034,13 +999,12 @@ namespace PuvoxLibrary
 
 
 
-
-
+		// This doesn't work in all of my C# 4.0 and 4.5 projects, so making it conditional
+#if Use_BLINK
 		public static System.Drawing.Color color_from_hex(string hex_str)
 		{
 			return (System.Drawing.Color)System.Drawing.ColorTranslator.FromHtml(hex_str);
 		}
-
 		//Color.FromArgb(newAlpha, mycolor);   Color.FromArgb(A, color.R, color.G, color.B);
 		public static System.Windows.Forms.Timer BlinkTimer;
 		public static System.Drawing.Color initialColor;
@@ -1065,8 +1029,8 @@ namespace PuvoxLibrary
 								{
 									var color = ctrl.BackColor != c1 ? c1 : c2;
 									for(var i=0; i<10; i++)
-									{
-										Thread.Sleep(cycleLength_MS/10);
+									{ 
+										System.Threading.Thread.Sleep(cycleLength_MS/10);
 										ctrl.BackColor = System.Drawing.Color.FromArgb((255/10)*i, color.R, color.G, color.B);
 									}
 									ctrl.BackColor = color;
@@ -1095,6 +1059,7 @@ namespace PuvoxLibrary
 			}
 		}
 		
+#endif
 
 		/*
 				public static bool blinkActive = false;
@@ -1285,9 +1250,9 @@ namespace PuvoxLibrary
 				else
 				{
 					MethodInfo method = classType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-					if (method==null)
+					if (method == null)
 					{
-						m("You are trying to trigger non-existing method:" + methodName + "("+ className + ")");
+						m("You are trying to trigger non-existing method:" + methodName + "(" + className + ")");
 						return "";
 					}
 					result = (string)method.Invoke(null, parameters);
@@ -1395,8 +1360,8 @@ namespace PuvoxLibrary
 		}
 
 		public static string getRegistryValue(string patKey, string defaultValue)
-		{ 
-			return getRegistryValue( regPartFromKey(patKey, true), regPartFromKey(patKey, false), defaultValue);
+		{
+			return getRegistryValue(regPartFromKey(patKey, true), regPartFromKey(patKey, false), defaultValue);
 		}
 
 		// // ----- 62 vs 32 :  https://apttech.wordpress.com/2012/01/06/difference-between-a-registry-hive-and-registry-key-2/
@@ -1414,10 +1379,12 @@ namespace PuvoxLibrary
 					RegistryKey registryHiveKey = getRegistryHiveKey(chosenRegHive);
 					if (registryHiveKey == null)
 					{
-						return defaultValue==null? null : defaultValue.ToString();
+						return defaultValue == null ? null : defaultValue.ToString();
 					}
 					else
 					{
+						if (path == "")
+							path = RegBaseKey;
 						RegistryKey registryKey = registryHiveKey.OpenSubKey(path);
 						// if path empty
 						if (registryKey == null)
@@ -1434,8 +1401,8 @@ namespace PuvoxLibrary
 							{
 								return defaultValue == null ? null : defaultValue.ToString();
 							}
-							else 
-							{ 
+							else
+							{
 								myregs[path + key] = value.ToString();
 								return myregs[path + key];
 							}
@@ -1465,6 +1432,8 @@ namespace PuvoxLibrary
 				RegistryKey registryHiveKey = getRegistryHiveKey(chosenRegHive);
 				if (registryHiveKey != null)
 				{
+					if (path == "")
+						path = RegBaseKey;
 					RegistryKey registryKey = registryHiveKey.OpenSubKey(path, true);
 					if (registryKey == null)
 					{
@@ -1742,7 +1711,7 @@ namespace PuvoxLibrary
 
 
 
-        /*
+		/*
         public Dictionary<string, string> CopyDictionary(Dictionary<string, string> dict)
         {
             return new Dictionary<string, string>(dict);  // //return dict.ToDictionary(entry => entry.Key,   entry => entry.Value);
@@ -1762,14 +1731,14 @@ namespace PuvoxLibrary
         */
 
 
- //(int)Enum.Parse(typeof(TestAppAreana.MovieList.Movies), KeyVal);
- 
- 
- 
+		//(int)Enum.Parse(typeof(TestAppAreana.MovieList.Movies), KeyVal);
+
+
+
 		// // ----- 62 vs 32 :  https://apttech.wordpress.com/2012/01/06/difference-between-a-registry-hive-and-registry-key-2/
-		
-		
-		
+
+
+
 		// https://stackoverflow.com/questions/14967618/deserialize-json-to-class-manually-with-reflection/50492864#50492864
 		//new update here, but doesnt work well : http://qaru.site/questions/6250657/deserialize-json-to-class-manually-with-reflection
 
@@ -1866,6 +1835,7 @@ namespace PuvoxLibrary
 		// https://stackoverflow.com/questions/3840762/how-do-you-urlencode-without-using-system-web 
 		public static string urlEncode(string msg)
 		{
+			// System.Web.HttpUtility.UrlEncode
 			return Uri.EscapeDataString(msg); //.Replace("%20", "+"); //4.5+ WebUtility.UrlEncode
 		}
 
@@ -1940,10 +1910,10 @@ namespace PuvoxLibrary
 
 		public static int GenerateRandom(int min, int max)
 		{
-		    var seed = Convert.ToInt32(System.Text.RegularExpressions.Regex.Match(Guid.NewGuid().ToString(), @"\d+").Value);
-		    return new Random(seed).Next(min, max);
+			var seed = Convert.ToInt32(System.Text.RegularExpressions.Regex.Match(Guid.NewGuid().ToString(), @"\d+").Value);
+			return new Random(seed).Next(min, max);
 		}
-		
+
 
 		public static string DateToSeconds(DateTime date)
 		{
@@ -2044,80 +2014,6 @@ namespace PuvoxLibrary
 
 
 
-		#region Encrypt/Decrypt
-		public static class EncryptDecrypt
-		{
-			// encryption 
-			public static string EncryptString(string plainText, string secterKey)
-			{
-				CryptoStream cryptoStream; MemoryStream memoryStream;
-				helper__encrypt_decrypt_stream(out memoryStream, out cryptoStream, secterKey);
-				string encryptedText = String.Empty;
-				try
-				{
-					byte[] plainBytes = Encoding.ASCII.GetBytes(plainText); 	// Convert the plainText string into a byte array
-					cryptoStream.Write(plainBytes, 0, plainBytes.Length);  		// Encrypt the input plaintext string
-					cryptoStream.FlushFinalBlock();                         	// Complete the encryption process
-					byte[] cipherBytes = memoryStream.ToArray();            	// Convert the encrypted data from a MemoryStream to a byte array
-
-					encryptedText = Convert.ToBase64String(cipherBytes, 0, cipherBytes.Length);  // Convert the encrypted byte array to a base64 encoded string
-				}
-				catch (Exception e)
-				{
-					return e.Message;
-				}
-				finally
-				{
-					memoryStream.Close();
-					cryptoStream.Close();
-				}
-				return encryptedText;
-			}
-
-			public static string DecryptString(string encryptedText, string secterKey)
-			{
-				
-				CryptoStream cryptoStream; MemoryStream memoryStream;
-				helper__encrypt_decrypt_stream(out memoryStream, out cryptoStream, secterKey);
-				string plainText = String.Empty;
-				try
-				{
-					byte[] cipherBytes = Convert.FromBase64String(encryptedText);// Convert the encryptedText string into a byte array
-					cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);		// Decrypt the input encryptedText string
-					cryptoStream.FlushFinalBlock();              				// Complete the decryption process
-					byte[] plainBytes = memoryStream.ToArray();					// Convert the decrypted data from a MemoryStream to a byte array
-					
-					plainText = Encoding.ASCII.GetString(plainBytes, 0, plainBytes.Length); // Convert the decrypted byte array to string
-				}
-				catch (Exception e)
-				{
-					return e.Message;
-				}
-				finally
-				{
-					memoryStream.Close();
-					cryptoStream.Close();
-				}
-				return plainText;
-			}
-			 
-			public static void helper__encrypt_decrypt_stream(out MemoryStream memoryStream, out CryptoStream cryptoStream, string secterKey)
-			{
-				SHA256 mySHA256 = SHA256Managed.Create();
-				byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(secterKey));
-				byte[] iv = new byte[16] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
-				// string symmetric encryption
-				Aes encryptor = Aes.Create();
-				encryptor.Mode = CipherMode.CBC;
-				//encryptor.KeySize = 256;    encryptor.BlockSize = 128;   encryptor.Padding = PaddingMode.Zeros;
-				encryptor.Key = key;
-				encryptor.IV = iv;
-
-				memoryStream = new MemoryStream();
-				cryptoStream = new CryptoStream(memoryStream, encryptor.CreateEncryptor(), CryptoStreamMode.Write); // write to memory stream
-			}
-		}
-		#endregion
 
 
 		//if (isDevelopment)  Console.OutputEncoding = Encoding.UTF8;   
@@ -2226,7 +2122,7 @@ namespace PuvoxLibrary
 			System.CodeDom.Compiler.CompilerResults cr = icc.CompileAssemblyFromSource(cp, content);
 			if (cr.Errors.Count > 0)
 			{
-				MessageBox.Show("ERROR: " + cr.Errors[0].ErrorText, "Error evaluating .cs code", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				System.Windows.Forms.MessageBox.Show("ERROR: " + cr.Errors[0].ErrorText, "Error evaluating .cs code", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				return null;
 			}
 			System.Reflection.Assembly a = cr.CompiledAssembly;
@@ -2289,7 +2185,6 @@ namespace PuvoxLibrary
 
 		private delegate void SetTextCallback(Form f, System.Windows.Forms.Control ctrl, string text);
 
-		private delegate bool Control_SetDelegate(System.Windows.Forms.Control ctrl, string what, object value);
 
 		public static void PopupMessage(object obj_)
 		{
@@ -2367,19 +2262,6 @@ namespace PuvoxLibrary
 		}
 
 
-
-
-		public static string GetControlText(Form obj, string which)
-		{
-			System.Windows.Forms.Control[] array = obj.Controls.Find(which, true);
-			if (array.Length <= 0)
-			{
-				return "cant find control";
-			}
-			return array[0].Text;
-		}
-
-
 		public static void CenterLabel(System.Windows.Forms.Control ctrl)
 		{
 			try
@@ -2412,47 +2294,6 @@ namespace PuvoxLibrary
 		{
 			return getRegistryValue(regKeyBase + optionsPrefix + key, two);
 		}
-
-		public static bool fillFormOptions(System.Windows.Forms.Control.ControlCollection cts, string regKeyBase)
-		{
-			foreach (object obj in cts)
-			{
-				System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
-				if (control != null && isUserInput(control))
-				{
-					string defaultVal = control.Text;
-					string regValue = getRegistryValue(regKeyBase + optionsPrefix + control.Name, defaultVal).ToLower();
-					//checkbox checking need to be obtained as string
-					if (control is System.Windows.Forms.CheckBox)
-					{
-						(control as System.Windows.Forms.CheckBox).Checked = regValue == "true";
-					}
-					else
-					{
-						control.Text = getRegistryValue(regKeyBase + optionsPrefix + control.Name, regValue);
-					}
-				}
-			}
-			return true;
-		}
-
-
-		public static bool saveFormOptions(System.Windows.Forms.Control.ControlCollection cts, string regKeyBase)
-		{
-			foreach (object obj in cts)
-			{
-				System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
-				if (control != null && isUserInput(control))
-				{
-					string value = control.Text;
-					//checkbox checking need to be saved as string
-					if (control is System.Windows.Forms.CheckBox) value = ((System.Windows.Forms.CheckBox)control).Checked ? "true" : "false";
-					setRegistryValue(regKeyBase + optionsPrefix + control.Name, value);
-				}
-			}
-			return true;
-		}
-
 		private void button_opts_save_Click(Form form)
 		{
 			foreach (Control c in form.Controls)
@@ -2486,8 +2327,45 @@ namespace PuvoxLibrary
 			}
 		}
 
+		// public void invokeSafe(Action callback, bool forceSynchronous) { invokeSafe(this, callback, true); }
 		// compare the thread ID of the calling thread to the thread ID of the creating thread.
-		public static void invokeSafe(System.Windows.Forms.Control uiElement, Action updater, bool forceSynchronous)
+		public static object invokeSafe(System.Windows.Forms.Control uiElement, Func<object> callback, bool forceSynchronous)
+		{
+			try
+			{
+				if (uiElement != null)
+				{
+					if (uiElement.InvokeRequired)
+					{
+						if (forceSynchronous)
+						{
+							return uiElement.Invoke(new Func<object>(delegate ()
+							{
+								return (object)callback();//  invokeSafe(uiElement, callback, forceSynchronous);
+							}));
+						}
+						else
+						{
+							uiElement.BeginInvoke(new Func<object>(delegate ()
+							{
+								return (object)callback(); //invokeSafe(uiElement, callback, forceSynchronous);
+							}));
+						}
+					}
+					else if (!uiElement.IsDisposed)
+					{
+						return ((Func<object>)callback)();
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				m(ex);
+			}
+			return null;
+		}
+
+		public static void invokeSafe(System.Windows.Forms.Control uiElement, Action callback, bool forceSynchronous)
 		{
 			try
 			{
@@ -2499,30 +2377,36 @@ namespace PuvoxLibrary
 						{
 							uiElement.Invoke(new Action(delegate ()
 							{
-								invokeSafe(uiElement, updater, forceSynchronous);
+								callback();//invokeSafe(uiElement, callback, forceSynchronous);
 							}));
 						}
 						else
 						{
 							uiElement.BeginInvoke(new Action(delegate ()
 							{
-								invokeSafe(uiElement, updater, forceSynchronous);
+								callback(); //invokeSafe(uiElement, callback, forceSynchronous);
 							}));
 						}
 					}
 					else if (!uiElement.IsDisposed)
 					{
-						updater();
+						callback();
 					}
 				}
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				m(ex);
 			}
 		}
 
 
+		private delegate bool Control_SetDelegate(System.Windows.Forms.Control ctrl, string what, object value);
 		public static bool Control_Set(System.Windows.Forms.Control ctrl, string what, object value)
+		{
+			return Control_Set(ctrl, what, value, false);
+		}
+		public static bool Control_Set(System.Windows.Forms.Control ctrl, string what, object value, bool append) //apend does not work!
 		{
 			bool result;
 			try
@@ -2535,13 +2419,8 @@ namespace PuvoxLibrary
 				{
 					if (ctrl.InvokeRequired)
 					{
-						Methods.Control_SetDelegate method = new Methods.Control_SetDelegate(Control_Set);
-						ctrl.Invoke(method, new object[]
-						{
-							ctrl,
-							what,
-							value
-						});
+						Control_SetDelegate method = new Control_SetDelegate(Control_Set);
+						ctrl.Invoke(method, new object[] { ctrl, what, value, append });
 					}
 					else if (what == "visibility")
 					{
@@ -2549,7 +2428,7 @@ namespace PuvoxLibrary
 					}
 					else if (what == "text")
 					{
-						ctrl.Text = (string)value;
+						ctrl.Text = (append ? ctrl.Text : "") + value.ToString();
 					}
 					else
 					{
@@ -2634,43 +2513,498 @@ namespace PuvoxLibrary
 			//  }
 			//  textBox1.Invoke(new System.Action(() =>   {    textBox1.Text = txt.ToString();    }));
 		}
+		 
+		private void copyableListView(ListView listView)
+		{
+			listView.KeyDown += (object sender, System.Windows.Forms.KeyEventArgs e) =>
+			{
+				if (!(sender is ListView)) return;
 
-		public static void SetTextControl(Form form, System.Windows.Forms.Control ctrl, string text)
+				if (e.Control && e.KeyCode == Keys.C)
+				{
+					var builder = new StringBuilder();
+					foreach (ListViewItem item in (sender as ListView).SelectedItems)
+						builder.AppendLine(item.Text + Environment.NewLine);
+					System.Windows.Forms.Clipboard.SetText(builder.ToString());
+				}
+			};
+		}
+
+
+		public static string GetControlText(Form obj, object which)
+		{
+			if (which is Control)
+			{
+				Control which_ = (Control)which;
+				if (which_.InvokeRequired)
+				{
+
+					return which_.Invoke(new Func<string>(() => { return which_.Text; })).ToString();
+				}
+				else
+				{
+					return which_.Text;
+				}
+			}
+			else
+			{
+				string which_ = (string)which;
+				if (obj.InvokeRequired)
+				{
+					return obj.Invoke(new Func<string>(() => {
+						System.Windows.Forms.Control[] array = obj.Controls.Find(which_, true);
+						return (array.Length <= 0) ? "cant find control" : array[0].Text;
+					})).ToString();
+				}
+				else
+				{
+					System.Windows.Forms.Control[] array = obj.Controls.Find(which_, true);
+					return (array.Length <= 0) ? "cant find control" : array[0].Text;
+				}
+			}
+		}
+
+
+		// BASIC GET & SET
+		public static string controlValueGet(Control control)
+		{
+			string value;
+			//checkbox checking need to be saved as string
+			if (control is System.Windows.Forms.CheckBox)
+			{
+				value = ((System.Windows.Forms.CheckBox)control).Checked ? "true" : "false";
+			}
+			else
+			{
+				value = control.Text;
+			}
+			return value;
+		}
+		public static bool controlValueSet(Control control, string value)
+		{
+			//checkbox checking need to be obtained as string
+			if (control is System.Windows.Forms.CheckBox)
+			{
+				(control as System.Windows.Forms.CheckBox).Checked = value == "true";
+			}
+			else
+			{
+				control.Text = value;
+			}
+			return true;
+		}
+		// #############
+		public static List<Control> GetAllControls(Control container)
+		{
+			List<Control> ControlList = new List<Control>();
+			foreach (Control control in container.Controls)
+			{
+				if (control.Controls.Count > 0)
+				{
+					ControlList.AddRange(GetAllControls(control));
+				}
+
+				ControlList.Add(control);
+			}
+			return ControlList;
+		}
+
+		public static Control ControlGetByName(Control form, string name)
+        {
+			var allCtrls = GetAllControls(form);
+			Control result = null;
+			foreach (Control control in allCtrls)
+			{
+				if (control.Name == name)
+				{
+					result = control;
+				}
+				if (control.Controls.Count > 0)
+				{
+					var result1 = ControlGetByName(control, name);
+					if (result1 != null)
+						result = result1;
+				}
+			}
+			return result;
+		}
+
+		public static void SetControlTexts_Translated(Form form, Dictionary<string, Dictionary<string, string>> controlsTexts, string selectedLanguage)
+		{
+			foreach (KeyValuePair<string, Dictionary<string, string>> kv in controlsTexts)
+			{
+				string key = kv.Key;
+				if (kv.Value.ContainsKey(selectedLanguage))
+					SetControlText(form, key, kv.Value[selectedLanguage]);
+				else if (kv.Value.ContainsKey("en"))
+					SetControlText(form, key, kv.Value["en"]);
+			}
+		}
+
+
+		public static bool GetUninstallString2(string ProductName)
 		{
 			try
 			{
-				if (ctrl != null)
+				RegistryKey localKey = RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, RegistryView.Registry64);
+				var key = localKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall") ??
+					localKey.OpenSubKey(@"SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall");
+
+				if (key == null)
+					return false;
+				foreach (var x in key.GetSubKeyNames()
+						.Select(keyName => key.OpenSubKey(keyName))
+						.Select(subkey => subkey.GetValue("DisplayName") as string))
+					Debug.WriteLine(x);
+
+				return key.GetSubKeyNames()
+						.Select(keyName => key.OpenSubKey(keyName))
+						.Select(subkey => subkey.GetValue("DisplayName") as string)
+						.Any(displayName => displayName != null && displayName.Contains(ProductName));
+			}
+			catch
+			{
+				// Log message                  
+				return false;
+			}
+		}
+
+		public static string GetUninstallString1(string msiName, bool exactMatch_Or_Contains)
+		{
+			string uninstallString = string.Empty;
+			try
+			{
+				string path = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\S-1-5-18\\Products";
+
+				RegistryKey key = Registry.LocalMachine.OpenSubKey(path); //RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(path)
+				foreach (string tempKeyName in key.GetSubKeyNames())
 				{
-					if (ctrl.InvokeRequired)
+					RegistryKey tempKey = key.OpenSubKey(tempKeyName + "\\InstallProperties");
+					if (tempKey != null)
 					{
-						Methods.SetTextCallback method = new Methods.SetTextCallback(SetTextControl);
-						form.Invoke(method, new object[]
+						var name = tempKey.GetValue("DisplayName").ToString();
+						if ((exactMatch_Or_Contains && name == msiName) || (!exactMatch_Or_Contains && name.Contains(msiName)))
 						{
-							form,
-							ctrl,
-							text
-						});
+							uninstallString = Convert.ToString(tempKey.GetValue("UninstallString")); //uninstallString.Replace("/I", "/X");////+= " /quiet /qn";
+							uninstallString = uninstallString.Replace("MsiExec.exe", "").Replace(" /X", "").Trim();
+							break;
+						}
 					}
-					else
+				}
+				return uninstallString;
+			}
+			catch (Exception ex)
+			{
+				throw new ApplicationException(ex.Message);
+			}
+		}
+
+
+		private Dictionary<string, string> gtranslate_dict;
+		public static string gTranslate(string what, string toLanguage, bool useApi = false, string ApiURL = "")
+		{
+			var fromLanguage = "en";
+			string result = what;
+			if (useApi)
+			{
+				string text3 = urlRead(ApiURL + "&action=translate&lang=" + toLanguage + "&string[]=" + urlEncode(what) + DeveloperMachineAddition());
+
+				//if (deserialize(text3, ref _dict) && _dict.ContainsKey(what))
+				//text2 = _dict[what];
+			}
+			else
+			{
+				// https://stackoverflow.com/questions/26714426/what-is-the-meaning-of-google-translate-query-params
+
+
+				var url = @"https://translate.googleapis.com/translate_a/single?client=gtx&sl=" + fromLanguage + "&tl=" + toLanguage + "&dt=t&q=" + urlEncode(what);
+				var content = urlRead(url);
+
+
+
+
+
+				Match match = Regex.Match(content, "\\[\\[\\[\"(.*?)\",\"");
+				if (match.Success)
+				{
+					result = match.Groups[1].Value.Replace("\\", "");
+
+				}
+				/*
+				try
+				{
+					result = result.Substring(4, result.IndexOf("\"", 4, StringComparison.Ordinal) - 4);
+					return result;
+				}
+				catch
+				{
+					return word;
+				}
+				*/
+			}
+			return result;
+		}
+
+
+
+		public static void dumpPopup(object obj_)
+		{
+			PopupForm_(dump(obj_));
+		}
+
+
+		/*
+        private void texbox1_TextChanged(object sender, EventArgs e)
+        {
+            saveCallback(sender);
+        }
+        //
+        private void setKeys()
+        {
+            foreach (Control ctl in this.GetAllControls(this))
+            {
+                if (ctl is TextBox)
+                    setKey(ctl);
+            }
+        }
+        string tempFile(string which) { return Path.GetTempPath() + "td_api_temp_" + which; }
+        private string getKey(string which)
+        {
+            string file = tempFile(which);
+            if (!File.Exists(file)) File.WriteAllText(file, "");
+            return File.ReadAllText(file);
+        }
+        private void setKey(Control ctl)
+        {
+            ctl.Text = getKey(ctl.Name);
+        }
+        private void saveCallback(object sender)
+        {
+            var tb = (sender as Control);
+            File.WriteAllText(tempFile(tb.Name), (sender as Control).Text);
+        }
+
+
+        public  List<Control> GetAllControls(Control container)
+        {
+            List<Control> ControlList = new List<Control>();
+            foreach (Control control in container.Controls)
+            {
+                if (control.Controls.Count > 0)
+                {
+                    ControlList.AddRange(GetAllControls(control));
+                }
+
+                ControlList.Add(control);
+            }
+            return ControlList;
+        }
+		*/
+
+
+		public static void FormOption_Fill(Control control, string regKeyBase)
+		{
+			if (control != null)
+			{
+				invokeSafe(control, () =>
+				{
+					if (isUserInput(control)) 
+
 					{
-						ctrl.Text = text;
+						string targetName = control.Name;
+						if (targetName.StartsWith("option_"))
+						{
+							string regValue = getRegistryValue(regKeyBase + optionsPrefix + control.Name, control.Text).ToLower();
+							controlValueSet(control, regValue);
+						}
+					}
+				}, true);
+			}
+		}
+		public static bool FormOptions_Fill(object FormOrControlCollection, string regKeyBase)
+		{
+			if (FormOrControlCollection is Form)
+			{
+				foreach (Control ctl in GetAllControls((Form)FormOrControlCollection))
+				{
+					FormOption_Fill(ctl, regKeyBase);
+				}
+			}
+			if (FormOrControlCollection is System.Windows.Forms.Control.ControlCollection)
+			{
+				foreach (object obj in (System.Windows.Forms.Control.ControlCollection)FormOrControlCollection)
+				{
+					if (obj is Control)
+					{
+						System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
+						FormOption_Fill(control, regKeyBase);
 					}
 				}
 			}
-			catch (Exception)
+			return true;
+		}
+		public static bool saveFormOptions(System.Windows.Forms.Control.ControlCollection cts, string regKeyBase)
+		{
+			foreach (object obj in cts)
 			{
+				System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
+				if (control != null && isUserInput(control))
+				{
+					string value = control.Text;
+					//checkbox checking need to be saved as string
+					if (control is System.Windows.Forms.CheckBox) value = ((System.Windows.Forms.CheckBox)control).Checked ? "true" : "false";
+					setRegistryValue(regKeyBase + optionsPrefix + control.Name, value);
+
+				}
+			}
+			return true;
+		}
+
+		public bool saveFormOptions_old(System.Windows.Forms.Control.ControlCollection cts)
+		{
+			foreach (object obj in cts)
+			{
+				System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
+				if (control != null && isUserInput(control))
+				{
+					string value;
+					if (control is System.Windows.Forms.CheckBox)
+					{
+						value = ((System.Windows.Forms.CheckBox)control).Checked.ToString();
+					}
+					else
+					{
+						value = control.Text;
+					}
+					setRegistryValue(optionsPrefix + control.Name, value);
+				}
+			}
+			return true;
+		}
+
+
+		public static bool fillFormOptions(System.Windows.Forms.Control.ControlCollection cts, string regKeyBase)
+		{
+			foreach (object obj in cts)
+			{
+				System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
+				if (control != null && isUserInput(control))
+				{
+					string defaultVal = control.Text;
+					string regValue = getRegistryValue(regKeyBase + optionsPrefix + control.Name, defaultVal).ToLower();
+					//checkbox checking need to be obtained as string
+					if (control is System.Windows.Forms.CheckBox)
+					{
+						(control as System.Windows.Forms.CheckBox).Checked = regValue == "true";
+					}
+					else
+					{
+						control.Text = getRegistryValue(regKeyBase + optionsPrefix + control.Name, regValue);
+
+					}
+				}
+			}
+			return true;
+		}
+
+
+
+
+		public static void FormOption_Save(Control control, string regKeyBase)
+		{
+			if (control != null)
+			{
+				invokeSafe(control, () =>
+				{
+					if (isUserInput(control))
+					{
+						string targetName = control.Name;
+						if (targetName.StartsWith("option_"))
+						{
+							setRegistryValue(regKeyBase + optionsPrefix + control.Name, controlValueGet(control));
+						}
+					}
+				}, true);
 			}
 		}
-		#endregion
+
+		public static bool FormOptions_Save(object FormOrControlCollection, string regKeyBase)
+		{
+			if (FormOrControlCollection is Form)
+			{
+				foreach (Control ctl in GetAllControls((Form)FormOrControlCollection))
+
+				{
+					FormOption_Save(ctl, regKeyBase);
+				}
+			}
+			if (FormOrControlCollection is System.Windows.Forms.Control.ControlCollection)
+			{
+				foreach (object obj in (System.Windows.Forms.Control.ControlCollection)FormOrControlCollection)
+				{
+					if (obj is Control)
+					{
+						System.Windows.Forms.Control control = (System.Windows.Forms.Control)obj;
+						FormOption_Save(control, regKeyBase);
+					}
+				}
+			}
+			return true;
+		}
 
 
 
+		// public static string AppName = "my_sample_app";
+		// public void formOptionsSaveLoad(bool SaveOrRestore) { formOptionsSaveLoad(this, SaveOrRestore, AppName); }
+		// text should contain "option_"
+		public static void formOptionsSaveLoad(Form form, bool SaveOrRestore, string optionsFileName)
+		{
+			System.Xml.XmlDocument doc = new System.Xml.XmlDocument();
+			string optionsFilePath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\options_" + appName() + " " + (optionsFileName != "" ? optionsFileName : form.GetType().Name);
+			string initialXml = "<all_options></all_options>";
+			if (!File.Exists(optionsFilePath)) { File.WriteAllText(optionsFilePath, initialXml); }
+			if (SaveOrRestore)
+			{
+				doc.LoadXml(initialXml);
+				doc.PreserveWhitespace = true;
+			}
+			else
+			{
+				doc.LoadXml(File.ReadAllText(optionsFilePath));
+			}
+			foreach (Control control in GetAllControls(form))
+			{
+				string targetName = control.Name;
+				if (targetName.StartsWith("option_"))
+				{
+					if (SaveOrRestore)
+					{
+						System.Xml.XmlElement newElem = doc.CreateElement(targetName);
+						newElem.InnerText = controlValueGet(control);
+						doc.DocumentElement.AppendChild(newElem);
+					}
+					else
+					{
+						var xmlNodes = doc.GetElementsByTagName(targetName);
+						if (xmlNodes.Count > 0)
+						{
+							string val = xmlNodes[0].InnerText;
+							controlValueSet(control, val);
 
+						}
+					}
+				}
+			}
+			if (SaveOrRestore)
+			{
+				doc.Save(optionsFilePath);
+			}
+		}
 
-
-
-
-
+		public static void FillIfEmpty(Control ctrl, string str)
+		{
+			if (ctrl.Text == "") ctrl.Text = str;
+		}
 
 		#region Timer 
 
@@ -2759,10 +3093,15 @@ namespace PuvoxLibrary
 			}
 		}
 
-		public static void Timer(Action<object, ElapsedEventArgs> myMethod, int interval, bool autoreset)
+		// 			 Timer( () => { }, 30 * 1000, false);
+		//i.e.        Timer( new Action<object, System.Timers.ElapsedEventArgs>((object sender, System.Timers.ElapsedEventArgs e) => { }), 30 * 1000, false);
+		// 			 Timer( new Action<object, object>((object sender, object e) => { }), 30 * 1000, false);
+		public static void Timer(Action myMethod, int interval, bool autoreset)
 		{
 			System.Timers.Timer timer = new System.Timers.Timer();
-			timer.Elapsed += myMethod.Invoke;
+			//timer.Elapsed += myMethod.Invoke;   //Action<object, System.Timers.ElapsedEventArgs> myMethod
+			//timer.Elapsed += new System.Timers.ElapsedEventHandler((object a, System.Timers.ElapsedEventArgs b) => myMethod());
+			timer.Elapsed += new Action<object, System.Timers.ElapsedEventArgs>((object a, System.Timers.ElapsedEventArgs b) => myMethod()).Invoke;
 			timer.Interval = (double)interval;
 			timer.AutoReset = autoreset;
 			timer.Start();
@@ -2836,44 +3175,46 @@ namespace PuvoxLibrary
 		{
 			try
 			{
-				var request = (System.Net.HttpWebRequest) System.Net.HttpWebRequest.Create(url);
-				request.UserAgent= "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET4.0C; .NET4.0E)";
+				System.Net.ServicePointManager.Expect100Continue = true;
+				System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+				var request = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(url);
+				request.UserAgent = "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET4.0C; .NET4.0E)";
 				using (var response = request.GetResponse())
 				{
-				    return new System.IO.StreamReader(response.GetResponseStream()).ReadToEnd();
+					return new System.IO.StreamReader(response.GetResponseStream()).ReadToEnd();
 				}
-			} 
+			}
 			catch (System.Net.WebException ex)
-	        {
-	            var sr = new System.IO.StreamReader(ex.Response.GetResponseStream());
-	            return sr.ReadToEnd();
-	        }
-			catch(Exception e){
-				return "UrlRead Error:"+e.Message;
+			{
+				return ex.Response == null ? "" : new System.IO.StreamReader(ex.Response.GetResponseStream()).ReadToEnd();
+			}
+			catch (Exception e)
+			{
+				return "UrlRead Error:" + e.Message;
 			}
 		}
 
-        //(System.IO.File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/debug.txt"))
-        public static string urlRead2(string url)
-        {
-            string responseText = "-1";
-            try
-            {
-                // HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-                // //req.AutomaticDecompression = DecompressionMethods.GZip;
-                // using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
-                // using (StreamReader reader = new StreamReader(res.GetResponseStream(), ASCIIEncoding.ASCII))
-                // responseText = reader.ReadToEnd(); 
-                using (System.Net.WebClient wc = new System.Net.WebClient())
-                {
-                    wc.Encoding = Encoding.UTF8;
-                    //  new StreamReader(wc.OpenRead("http://your_website.com"));
-                    responseText = wc.DownloadString(url);
-                }
-            }
-            catch (Exception e) { return ("Error:" + e.ToString()); }
-            return responseText;
-        }
+		//(System.IO.File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/debug.txt"))
+		public static string urlRead2(string url)
+		{
+			string responseText = "-1";
+			try
+			{
+				// HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+				// //req.AutomaticDecompression = DecompressionMethods.GZip;
+				// using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
+				// using (StreamReader reader = new StreamReader(res.GetResponseStream(), ASCIIEncoding.ASCII))
+				// responseText = reader.ReadToEnd(); 
+				using (System.Net.WebClient wc = new System.Net.WebClient())
+				{
+					wc.Encoding = Encoding.UTF8;
+					//  new StreamReader(wc.OpenRead("http://your_website.com"));
+					responseText = wc.DownloadString(url);
+				}
+			}
+			catch (Exception e) { return ("Error:" + e.ToString()); }
+			return responseText;
+		}
 
 		// wb.DocumentCompleted += wb_DocumentCompleted;
 		//  private void wb_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
@@ -3053,15 +3394,10 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		public static void WriteTempFile(string fileName, string text, bool rewrite_or_add)
+		public static bool WriteTempFile(string fileName, string text, bool append)
 		{
 			string path = Environment.GetEnvironmentVariable("tmp") + "\\" + fileName + ".txt";
-			if (rewrite_or_add)
-			{
-				File.WriteAllText(path, text);
-				return;
-			}
-			File.AppendAllText(path, text);
+			return FileWrite(path, text, append);
 		}
 
 		public static bool FileWriteSafe(string filePath, string text)
@@ -3079,6 +3415,31 @@ namespace PuvoxLibrary
 			}
 			return false;
 		}
+		private static readonly object fileLock = new object();
+		private static bool FileWrite(string filename, string text, bool append = false)
+		{
+			try
+			{
+				if (string.IsNullOrEmpty(text))
+				{
+					return false;
+				}
+				lock (fileLock)
+				{
+					using (System.IO.StreamWriter writer = new System.IO.StreamWriter(filename, append, System.Text.Encoding.UTF8))
+					{
+						writer.WriteLine(text);
+					}
+					return true;
+				}
+			}
+			catch
+			{
+				throw;
+			}
+			return false;
+		}
+
 
 		public static string ReadFile(string path)
 		{
@@ -3201,6 +3562,12 @@ namespace PuvoxLibrary
 		{
 			return new Regex("\\-(.*)", RegexOptions.IgnoreCase).Replace(isoLang, "");
 		}
+		public static string getKeyFromIsoLang(string isoLang)
+		{
+			var parts = isoLang.Split('-'); //i.e.  en-US
+			return parts[0];
+		}
+
 
 
 		public static string gsApkPath = "";
@@ -3218,7 +3585,7 @@ namespace PuvoxLibrary
 		}
 
 
-	
+
 
 		public static void setTexts(Dictionary<string, string> dict, string lang_2char, Form frm)
 		{
@@ -3290,7 +3657,7 @@ namespace PuvoxLibrary
 					string registryValue = getRegistryValue(key, "");
 					if (string.IsNullOrEmpty(registryValue))
 					{
-						result = englishText;// GTranslate_checker(englishValue, targetLang);
+						result = gTranslate(englishText, targetLang);
 						setRegistryValue(key, result);
 					}
 					else
@@ -3307,49 +3674,9 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
- 
 
 
-		private Dictionary<string, string> gtranslate_dict;
-		public static string gTranslate(string what, string lang_target, bool useApi = false, string ApiURL = "")
-		{
-			string text = "en";
-			string text2 = "";
-			if (useApi)
-			{
-				string text3 = urlRead(string.Concat(new string[]
-				{
-					ApiURL,
-					"&action=translate&lang=",
-					lang_target,
-					"&string[]=",
-					urlEncode(what),
-					DeveloperMachineAddition()
-				}));
-				//if (deserialize(text3, ref _dict) && _dict.ContainsKey(what))
-				//text2 = _dict[what];
-			}
-			else
-			{
-				// https://stackoverflow.com/questions/26714426/what-is-the-meaning-of-google-translate-query-params
-				string text3 = urlRead(string.Concat(new string[]
-				{
-					"https://translate.googleapis.com/translate_a/single?client=gtx&sl=",
-					text,
-					"&tl=",
-					lang_target,
-					"&dt=t&q=",
-					urlEncode(what)
-				}));
-				Match match = Regex.Match(text3, "\\[\\[\\[\"(.*?)\",\"");
-				if (match.Success)
-				{
-					text2 = match.Groups[1].Value;
-					text2 = text2.Replace("\\", "");
-				}
-			}
-			return text2;
-		}
+
 		#endregion
 
 
@@ -3384,14 +3711,17 @@ namespace PuvoxLibrary
 		}
 
 
+
+
+
 		#region debugger
 		public static void m(int obj) { m(obj.ToString()); }
 		public static void m(double obj) { m(obj.ToString()); }
-		public static void m(bool obj) { m(obj.ToString()); } 
+		public static void m(bool obj) { m(obj.ToString()); }
 		public static void m(Exception obj) { m(obj.ToString()); }
 		public static void m(Dictionary<object, object> obj) { try { m(tryEnumerabledString(obj)); } catch { m(obj.ToString()); } }
-		public static void m(object obj) { m(obj.ToString()); }
-		public static void m(object obj, bool showTrace) { m(obj.ToString() + Environment.NewLine + stackFramesString(new StackTrace()) ); }
+		public static void m(object obj) { m(obj == null ? "object is null" : obj.ToString()); }
+		public static void m(object obj, bool showTrace) { m((obj == null ? "object is null" : obj.ToString()) + (!showTrace ? "" : Environment.NewLine + stackFramesString(new StackTrace()))); }
 		public static void m(object[] obj)
 		{
 			if (obj == null) { m("null"); return; }
@@ -3426,7 +3756,7 @@ namespace PuvoxLibrary
 		// another kind of dumper (removed):  https://pastebin.com/KEzWthMp
 
 
-		public static void dumpmsg(object obj) {  m(dump(obj)); }
+		public static void dumpmsg(object obj) { m(dump(obj)); }
 		public static string dump(object obj) { return dump(obj, AllBindingFlags, false, 1, 1, ""); }
 		public static string dump(object obj, int deep) { return dump(obj, AllBindingFlags, false, deep, 1, ""); }
 		public static string dump(object obj, bool execMethods) { return dump(obj, AllBindingFlags, execMethods, 1, 1, ""); }
@@ -3435,193 +3765,6 @@ namespace PuvoxLibrary
 		// ugly-fied
 
 
-		private static string dump(object obj, BindingFlags bindingFlags, bool execMethods, int maxRecursiveDeep, int currentDeep, string prefix)
-		{
-			string phraseSTR = prefix + " | ";
-			string str = prefix + " -> ";
-
-			string newLine = Environment.NewLine;
-			List<string> list = new List<string>();
-			Dictionary<string, List<string>> dictionary = new Dictionary<string, List<string>>();
-			string text4 = newLine + phraseSTR + ((currentDeep == 1) ? ("<----------------- START (All Members : " + bindingFlags.ToString() + ") ----------------------->") : "-----------") + newLine;
-
-			string result = text4 + "<--- OBJECT TYPE: " + obj.GetType().ToString() + " --->" + newLine;
-			try
-			{
-				var enumerable = obj as System.Collections.IEnumerable;
-				if (enumerable != null)
-				{
-					return tryEnumerabledString(obj, "__ ");
-					result += tryEnumerabledString(obj, "__ ");
-				}
-				else
-					foreach (MemberInfo memberInfo in GetMembersInclPrivateBase_static(obj.GetType(), bindingFlags))
-					{
-						string text5 = "__";
-						string text6 = "__cant_detect1__";
-						try
-						{
-							text5 = memberInfo.Name;
-						}
-						catch
-						{
-							text5 = "_name_not_detected_";
-						}
-						string text7 = memberInfo.MemberType.ToString();
-						string text8 = nl_ + " ? " + str + text5;
-						try
-						{
-							if (memberInfo.MemberType == MemberTypes.Field)
-							{
-								FieldInfo fieldInfo = (FieldInfo)memberInfo;
-								object value = fieldInfo.GetValue(obj);
-								if (value == null)
-								{
-									text6 = "null";
-								}
-								else
-								{
-									text6 = value.ToString() + "   [" + value.GetType().FullName + "]  <" + AccessModifierType(fieldInfo) + ">";
-									if (!singleTypes.Contains(value.GetType().ToString()))
-									{
-										string text9 = tryEnumerabledString(value, text8);
-										if (text9 != "")
-										{
-											text6 += text9;
-										}
-										else if (currentDeep < maxRecursiveDeep)
-										{
-											text6 += dump(value, bindingFlags, execMethods, maxRecursiveDeep, currentDeep + 1, text8);
-										}
-									}
-								}
-							}
-							else if (memberInfo.MemberType == MemberTypes.Property)
-							{
-								PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
-								object value2 = propertyInfo.GetValue(obj, null);
-								if (value2 == null)
-								{
-									text6 = "null";
-								}
-								else
-								{
-									text6 = value2.ToString() + "   [" + value2.GetType().FullName + "]  <" + AccessModifierType(propertyInfo) + ">";
-									if (!singleTypes.Contains(value2.GetType().ToString()))
-									{
-										string text10 = tryEnumerabledString(value2, text8);
-										if (text10 != "")
-										{
-											text6 += text10;
-										}
-										else if (currentDeep < maxRecursiveDeep)
-										{
-											text6 += dump(value2, bindingFlags, execMethods, maxRecursiveDeep, currentDeep + 1, text8);
-										}
-									}
-								}
-							}
-							else
-							{
-								if (memberInfo.MemberType == MemberTypes.Method)
-								{
-									MethodInfo methodInfo = (MethodInfo)memberInfo;
-									string text11 = methodInfo.ReturnType.ToString();
-									text6 = string.Concat(new string[] { "   [", text11.Replace("System.", ""), "]  (", tryEnumerabledString(methodInfo.GetParameters(), ", "), ")  <", AccessModifierType(methodInfo), ">" });
-									if (!execMethods)
-									{
-										goto IL_52F;
-									}
-									string[] source = new string[]
-									{ "System.Double", "System.Int32", "System.String", "System.Float", "System.Type" };
-									if (!source.Contains(text11))
-									{
-										goto IL_52F;
-									}
-									try
-									{
-										object obj2 = methodInfo.Invoke(obj, null);
-										if (obj2 != null)
-										{
-											object obj3 = text6;
-											text6 = string.Concat(new object[] { obj3, "========", obj2.ToString(), "   [", obj2.GetType(), "]" });
-										}
-										goto IL_52F;
-									}
-									catch (Exception)
-									{
-										text6 += "--------------cant-Invoke";
-										goto IL_52F;
-									}
-								}
-								else if (memberInfo.MemberType == MemberTypes.Constructor)
-								{
-									ConstructorInfo constructorInfo = (ConstructorInfo)memberInfo;
-									ConstructorInfo left = constructorInfo;
-									if (left == null)
-									{
-										text6 = "null";
-									}
-									else
-									{
-										ParameterInfo[] parameters = constructorInfo.GetParameters();
-										text6 = "params:" + parameters.ToString() + "   [type:" + parameters.GetType() + "]";
-									}
-								}
-								else if (memberInfo.MemberType == MemberTypes.Event)
-								{
-									EventInfo eventInfo = (EventInfo)memberInfo;
-									EventInfo left2 = eventInfo;
-									text6 = left2 == null ? "null" : "ToString: " + eventInfo.ToString();
-								}
-								else
-								{
-									text6 = "ToStringed: " + memberInfo.ToString();
-								}
-							}
-						IL_52F:;
-						}
-						catch
-						{
-							text6 += "--------------cant-get-value";
-						}
-						string str2 = pChars(text5) + text6;
-						string text12 = phraseSTR + text7 + ":    " + str2;
-						if (!list.Contains(text12))
-						{
-							list.Add(text12);
-							text12 += newLine;
-						}
-						else
-						{
-							text12 = "";
-						}
-						if (!dictionary.ContainsKey(text7))
-						{
-							dictionary[text7] = new List<string>();
-						}
-						dictionary[text7].Add(text12);
-					}
-			}
-			catch (Exception e)
-			{
-				result += ExceptionMessage(e, obj);
-				m(result);
-			}
-			string text13 = "";
-			foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
-			{
-				foreach (string str3 in (from q in keyValuePair.Value orderby q select q).ToList<string>())
-
-
-				{
-					text13 += str3;
-				}
-			}
-			result += text13;
-			result = result + phraseSTR + ((currentDeep == 1) ? ("<----------------- END ---------------------->" + newLine + newLine) : "-----------") + newLine;
-			return result;
-		}
 
 
 		public static string AccessModifierType(object objInfo)
@@ -3680,7 +3823,20 @@ namespace PuvoxLibrary
 			}
 			return text;
 		}
+		/*
+		public static IEnumerable<MemberInfo> GetMembers(Type type, bool getStatic=true, bool getPrivate=true, bool getBases=true) {
+			var memberList = ImmutableList<MemberInfo>.Empty;
+			if (type == typeof(Object)) return memberList;
 
+			var bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public;
+			if (getStatic) bindingFlags |= BindingFlags.Static;
+			if (getPrivate) bindingFlags |= BindingFlags.NonPublic;
+
+			memberList = memberList.AddRange(type.GetMembers(bindingFlags));
+			if (getBases) memberList = memberList.AddRange(GetMembers(type.BaseType, getStatic, getPrivate, getBases));
+			return memberList.Where(memberInfo => memberInfo is PropertyInfo || (memberInfo is FieldInfo && memberInfo.GetCustomAttribute<CompilerGeneratedAttribute>() == null)); // filter out property with backing fields
+		}
+		*/
 		// ===========================
 
 		public static object callMethod(object o, string methodName, params object[] args)
@@ -4070,6 +4226,270 @@ namespace PuvoxLibrary
 
 		#endregion
 
+
+
+
+
+
+
+
+		public static Dictionary<string, string> GoogleTranslateLangs()
+		{
+			// See https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
+			return new Dictionary<string, string>() { { "auto", "Automatic" }, { "af", "Afrikaans" }, { "sq", "Albanian" }, { "am", "Amharic" }, { "ar", "Arabic" }, { "hy", "Armenian" }, { "az", "Azerbaijani" }, { "eu", "Basque" }, { "be", "Belarusian" }, { "bn", "Bengali" }, { "bs", "Bosnian" }, { "bg", "Bulgarian" }, { "ca", "Catalan" }, { "ceb", "Cebuano" }, { "ny", "Chichewa" }, { "zh-cn", "Chinese Simplified" }, { "zh-tw", "Chinese Traditional" }, { "co", "Corsican" }, { "hr", "Croatian" }, { "cs", "Czech" }, { "da", "Danish" }, { "nl", "Dutch" }, { "en", "English" }, { "eo", "Esperanto" }, { "et", "Estonian" }, { "tl", "Filipino" }, { "fi", "Finnish" }, { "fr", "French" }, { "fy", "Frisian" }, { "gl", "Galician" }, { "ka", "Georgian" }, { "de", "German" }, { "el", "Greek" }, { "gu", "Gujarati" }, { "ht", "Haitian Creole" }, { "ha", "Hausa" }, { "haw", "Hawaiian" }, { "iw", "Hebrew" }, { "hi", "Hindi" }, { "hmn", "Hmong" }, { "hu", "Hungarian" }, { "is", "Icelandic" }, { "ig", "Igbo" }, { "id", "Indonesian" }, { "ga", "Irish" }, { "it", "Italian" }, { "ja", "Japanese" }, { "jw", "Javanese" }, { "kn", "Kannada" }, { "kk", "Kazakh" }, { "km", "Khmer" }, { "ko", "Korean" }, { "ku", "Kurdish (Kurmanji)" }, { "ky", "Kyrgyz" }, { "lo", "Lao" }, { "la", "Latin" }, { "lv", "Latvian" }, { "lt", "Lithuanian" }, { "lb", "Luxembourgish" }, { "mk", "Macedonian" }, { "mg", "Malagasy" }, { "ms", "Malay" }, { "ml", "Malayalam" }, { "mt", "Maltese" }, { "mi", "Maori" }, { "mr", "Marathi" }, { "mn", "Mongolian" }, { "my", "Myanmar (Burmese)" }, { "ne", "Nepali" }, { "no", "Norwegian" }, { "ps", "Pashto" }, { "fa", "Persian" }, { "pl", "Polish" }, { "pt", "Portuguese" }, { "ma", "Punjabi" }, { "ro", "Romanian" }, { "ru", "Russian" }, { "sm", "Samoan" }, { "gd", "Scots Gaelic" }, { "sr", "Serbian" }, { "st", "Sesotho" }, { "sn", "Shona" }, { "sd", "Sindhi" }, { "si", "Sinhala" }, { "sk", "Slovak" }, { "sl", "Slovenian" }, { "so", "Somali" }, { "es", "Spanish" }, { "su", "Sundanese" }, { "sw", "Swahili" }, { "sv", "Swedish" }, { "tg", "Tajik" }, { "ta", "Tamil" }, { "te", "Telugu" }, { "th", "Thai" }, { "tr", "Turkish" }, { "uk", "Ukrainian" }, { "ur", "Urdu" }, { "uz", "Uzbek" }, { "vi", "Vietnamese" }, { "cy", "Welsh" }, { "xh", "Xhosa" }, { "yi", "Yiddish" }, { "yo", "Yoruba" }, { "zu", "Zulu" } };
+		}
+
+
+		private static string dump(object obj, BindingFlags bindingFlags, bool execMethods, int maxRecursiveDeep, int currentDeep, string prefix)
+		{
+			string indentPhrase = prefix + " | ";
+			string arrowPointer = prefix + " -> ";
+
+			string NL = Environment.NewLine;
+			List<string> list = new List<string>();
+			Dictionary<string, List<string>> dictionary = new Dictionary<string, List<string>>();
+
+
+			string result = NL + indentPhrase + (currentDeep == 1 ? ("<----------------- START ----------------->") : "-----------")
+				+ " >>>>> TYPE: " + obj.GetType().ToString() + " --->" + NL;
+			try
+			{
+				string tmp1 = tryEnumerabledString(obj, "__ ");
+				if (tmp1 != "")
+				{
+
+					result += tmp1;
+				}
+				else
+					foreach (MemberInfo memberInfo in GetMembersInclPrivateBase_static(obj.GetType(), bindingFlags))
+					{
+						string name_ = "__cant_detect__"; try { name_ = memberInfo.Name; } catch { }
+						string value_ = "__cant_detect__";
+
+
+						string type_ = memberInfo.MemberType.ToString();
+						string prefix2_ = nl_ + " ? " + arrowPointer + name_;
+						try
+						{
+
+							if (memberInfo.MemberType == MemberTypes.Field || memberInfo.MemberType == MemberTypes.Property)
+							{
+
+								object value = null;
+								if (memberInfo.MemberType == MemberTypes.Field)
+								{
+									FieldInfo fieldInfo = (FieldInfo)memberInfo;
+									value = fieldInfo.GetValue(obj);
+								}
+								else if (memberInfo.MemberType == MemberTypes.Property)
+								{
+									PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
+									value = propertyInfo.GetValue(obj, null);
+								}
+								// 
+								if (value == null)
+								{
+									value_ = "null";
+								}
+								else
+								{
+									value_ = "   [" + value.GetType().FullName + "] " + value.ToString() + " < " + AccessModifierType(memberInfo) + " > ";
+									if (!singleTypes.Contains(value.GetType().ToString()))
+									{
+										string text9 = tryEnumerabledString(value, prefix2_);
+										if (text9 != "")
+										{
+											value_ += text9;
+										}
+										else if (currentDeep < maxRecursiveDeep)
+										{
+											value_ += dump(value, bindingFlags, execMethods, maxRecursiveDeep, currentDeep + 1, prefix2_);
+										}
+									}
+								}
+							}
+							else
+							{
+								if (memberInfo.MemberType == MemberTypes.Method)
+								{
+									MethodInfo methodInfo = (MethodInfo)memberInfo;
+									string text11 = methodInfo.ReturnType.ToString();
+									value_ = string.Concat(new string[] { "   [", text11.Replace("System.", ""), "]  (", tryEnumerabledString(methodInfo.GetParameters(), ", "), ")  <", AccessModifierType(methodInfo), ">" });
+									var noDeleteWords = !name_.Contains("elete") && !name_.Contains("emove") && !name_.Contains("erase") && !name_.Contains("Erase");
+									if (execMethods && noDeleteWords)
+									{
+										string[] source = new string[]
+										{ "System.Double", "System.Int32", "System.String", "System.Float", "System.Type" };
+										if (source.Contains(text11))
+										{
+											try
+											{
+												object obj2 = methodInfo.Invoke(obj, null);
+												if (obj2 != null)
+												{
+													object obj3 = value_;
+													value_ = string.Concat(new object[] { obj3, "========", obj2.ToString(), "   [", obj2.GetType(), "]" });
+												}
+											}
+											catch (Exception)
+											{
+												value_ += "--------------cant-Invoke";
+											}
+										}
+
+									}
+								}
+								else if (memberInfo.MemberType == MemberTypes.Constructor)
+								{
+									ConstructorInfo constructorInfo = (ConstructorInfo)memberInfo;
+									ConstructorInfo left = constructorInfo;
+									if (left == null)
+									{
+										value_ = "null";
+									}
+									else
+									{
+										ParameterInfo[] parameters = constructorInfo.GetParameters();
+										value_ = "params:" + parameters.ToString() + "   [type:" + parameters.GetType() + "]";
+									}
+								}
+								else if (memberInfo.MemberType == MemberTypes.Event)
+								{
+									EventInfo eventInfo = (EventInfo)memberInfo;
+
+									value_ = eventInfo == null ? "null" : "ToString: " + eventInfo.ToString();
+
+								}
+								else
+								{
+									value_ = "ToStringed: " + memberInfo.ToString();
+								}
+							}
+						}
+						catch
+						{
+							value_ += "--------------error-getting-value";
+						}
+						string str2 = pChars(name_) + value_;
+						string line = indentPhrase + type_ + ":    " + str2;
+						if (!list.Contains(line))
+						{
+							list.Add(line);
+							line += NL;
+						}
+						else
+						{
+							line = "";
+						}
+						if (!dictionary.ContainsKey(type_))
+						{
+							dictionary[type_] = new List<string>();
+						}
+						dictionary[type_].Add(line);
+					}
+			}
+			catch (Exception e)
+			{
+				result += ExceptionMessage(e, obj);
+				m(result);
+			}
+			string finalTxt = "";
+			foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
+			{
+				foreach (string str3 in (from q in keyValuePair.Value orderby q select q).ToList<string>())
+				{
+					finalTxt += str3;
+				}
+			}
+			result += finalTxt;
+			result = result + indentPhrase + ((currentDeep == 1) ? ("<----------------- END ---------------------->" + NL + NL) : "-----------") + NL;
+			return result;
+		}
+
+
+		private static string ProgramName_ = "";
+		public static string ProgramName
+		{
+			get
+			{
+				if (ProgramName_ == "")
+				{
+					ProgramName_ = assemblyTitle() + "--" + assemblyGuid();
+					//m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); } 
+				}
+				return ProgramName_;
+			}
+			set { ProgramName_ = value; }
+		}
+		public static string assemblyName()
+		{
+			return System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+		}
+		public static string assemblyTitle()
+		{
+			return System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTitleAttribute>().Title;
+		}
+		public static string assemblyCompany()
+		{
+			return System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>().Company;
+		}
+		public static string assemblyGuid()
+		{
+			// (GuidAttribute)typeof(Program).Assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0].value;
+			//return System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttributes( System.Runtime.InteropServices.GuidAttribute), true)[0].ToString();
+			var currAssembly = System.Reflection.Assembly.GetExecutingAssembly();
+			return System.Runtime.InteropServices.Marshal.GetTypeLibGuidForAssembly(currAssembly).ToString();
+		}
+
+
+
+		private static string RegBaseKey_ = "";
+		public static string RegBaseKey
+		{
+			get
+			{
+				if (RegBaseKey_ == "")
+				{
+					RegBaseKey_ = "SOFTWARE\\ExampleCompany\\" + ProgramName + "\\";
+					//m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); } 
+				}
+				return RegBaseKey_;
+			}
+			set { RegBaseKey_ = value; }
+		}
+
+		public static string[] removeEmptyStrings(string[] strings)
+		{
+			return strings.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+		}
+		public static string[] removeEmptyStringsAndTrim(string[] strings)
+		{
+			return trim(strings.Where(x => !string.IsNullOrEmpty(x)).ToArray());
+		}
+		public static string[] trim(string[] strings)
+		{
+			return strings.Select(x => x.Trim()).ToArray();
+		}
+
+
+		public static string urlPost_Form(string url, Dictionary<string, string> paramss)
+		{
+
+			var client = new System.Net.Http.HttpClient();
+			client.BaseAddress = new Uri(url);
+			var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, ""); //i.e./v1/oauth2/token
+																									   //var paramss = new List<KeyValuePair<string, string>>();
+																									   //paramss.Add(new KeyValuePair<string, string>("site", "http://www.google.com"));
+			request.Content = new System.Net.Http.FormUrlEncodedContent(paramss);
+			var response = client.SendAsync(request).Result.Content.ReadAsStringAsync().Result;
+			return response;
+		}
+
+		public static void clearRegistryCached()
+		{
+			myregs.Clear();
+		}
+
 		// ======================= form functions ====================//
 
 		/*
@@ -4115,7 +4535,113 @@ namespace PuvoxLibrary
 		*/
 		// ======================= form functions ====================//
 
+		#region Encrypt/Decrypt  (another : https://pastebin.com/85yKZUnk )
+		public static class EncryptDecrypt
+		{
+			// encryption 
+			public static string EncryptString(string messageToEncrypt, string key_)
+			{
+				// Create sha256 hash
+				SHA256 mySHA256 = SHA256Managed.Create();
+				byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(key_));
+				// Create secret IV
+				byte[] iv = new byte[16] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+				// Instantiate a new Aes object to perform string symmetric encryption
+				Aes encryptor = Aes.Create();
+				encryptor.Mode = CipherMode.CBC;
+				// Set key and IV
+				byte[] aesKey = new byte[32];
+				Array.Copy(key, 0, aesKey, 0, 32);
+				encryptor.Key = aesKey;
+				encryptor.IV = iv;
+				// Instantiate a new MemoryStream object to contain the encrypted bytes
+				MemoryStream memoryStream = new MemoryStream();
+				// Instantiate a new encryptor from our Aes object
+				ICryptoTransform aesEncryptor = encryptor.CreateEncryptor();
+				// Instantiate a new CryptoStream object to process the data and write it to the  memory stream
+				CryptoStream cryptoStream = new CryptoStream(memoryStream, aesEncryptor, CryptoStreamMode.Write);
+				// Convert the plainText string into a byte array
+				byte[] plainBytes = Encoding.ASCII.GetBytes(messageToEncrypt);
+				// Encrypt the input plaintext string
+				cryptoStream.Write(plainBytes, 0, plainBytes.Length);
+				// Complete the encryption process
+				cryptoStream.FlushFinalBlock();
+				// Convert the encrypted data from a MemoryStream to a byte array
+				byte[] cipherBytes = memoryStream.ToArray();
+				// Close both the MemoryStream and the CryptoStream
+				memoryStream.Close();
+				cryptoStream.Close();
+				// Convert the encrypted byte array to a base64 encoded string
+				string cipherText = Convert.ToBase64String(cipherBytes, 0, cipherBytes.Length);
+				// Return the encrypted data as a string
+				return cipherText;
+			}
 
+
+			public static string DecryptString(string cipherText, string key_)
+			{
+				// Create sha256 hash
+				SHA256 mySHA256 = SHA256Managed.Create();
+				byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(key_));
+				// Create secret IV
+				byte[] iv = new byte[16] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+				// Instantiate a new Aes object to perform string symmetric encryption
+				Aes encryptor = Aes.Create();
+				encryptor.Mode = CipherMode.CBC;
+				// Set key and IV
+				byte[] aesKey = new byte[32];
+				Array.Copy(key, 0, aesKey, 0, 32);
+				encryptor.Key = aesKey;
+				encryptor.IV = iv;
+				// Instantiate a new MemoryStream object to contain the encrypted bytes
+				MemoryStream memoryStream = new MemoryStream();
+				// Instantiate a new encryptor from our Aes object
+				ICryptoTransform aesDecryptor = encryptor.CreateDecryptor();
+				// Instantiate a new CryptoStream object to process the data and write it to the 
+				// memory stream
+				CryptoStream cryptoStream = new CryptoStream(memoryStream, aesDecryptor, CryptoStreamMode.Write);
+				// Will contain decrypted plaintext
+				string plainText = String.Empty;
+				try
+				{
+					// Convert the ciphertext string into a byte array
+					byte[] cipherBytes = Convert.FromBase64String(cipherText);
+					// Decrypt the input ciphertext string
+					cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);
+					// Complete the decryption process
+					cryptoStream.FlushFinalBlock();
+					// Convert the decrypted data from a MemoryStream to a byte array
+					byte[] plainBytes = memoryStream.ToArray();
+					// Convert the decrypted byte array to string
+					plainText = Encoding.ASCII.GetString(plainBytes, 0, plainBytes.Length);
+				}
+				finally
+				{
+					// Close both the MemoryStream and the CryptoStream
+					memoryStream.Close();
+					cryptoStream.Close();
+				}
+				// Return the decrypted data as a string
+				return plainText;
+			}
+
+			public static void helper__encrypt_decrypt_stream(out MemoryStream memoryStream, out CryptoStream cryptoStream, string secterKey)
+			{
+				SHA256 mySHA256 = SHA256Managed.Create();
+				byte[] key = mySHA256.ComputeHash(Encoding.ASCII.GetBytes(secterKey));
+				byte[] iv = new byte[16] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+				// string symmetric encryption
+				Aes encryptor = Aes.Create();
+				encryptor.Mode = CipherMode.CBC;
+				//encryptor.KeySize = 256;    encryptor.BlockSize = 128;   encryptor.Padding = PaddingMode.Zeros;
+				encryptor.Key = key;
+				encryptor.IV = iv;
+
+				memoryStream = new MemoryStream();
+				cryptoStream = new CryptoStream(memoryStream, encryptor.CreateEncryptor(), CryptoStreamMode.Write); // write to memory stream
+			}
+		}
+		#endregion
 
 		public static double NetFrameworkVersion()
 		{
@@ -4330,17 +4856,22 @@ namespace PuvoxLibrary
 			bool result;
 			try
 			{
+				if (path == "") path = "tada";
 				if (!path.Contains("."))
 				{
 					path = "C:\\Windows\\media\\" + path + ".wav";
 				}
-				SoundPlayer soundPlayer = new SoundPlayer(path);
-				soundPlayer.Play();
-				result = true;
+				//if (File.Exists(path))
+				{
+					SoundPlayer soundPlayer = new SoundPlayer(path);
+					soundPlayer.Play();
+					result = true;
+				}
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
 				result = false;
+				m(ex.ToString());
 			}
 			return result;
 		}
@@ -4366,6 +4897,55 @@ namespace PuvoxLibrary
 			form1.Show();
 			//textarea.Font = new SimpleFont(textarea.Font.FontFamily, 11);
 		}
+
+		public static void PopupTextboxOnControlClick(Control control_)
+		{
+			control_.MouseClick += (sender, mouseEventArgs) => {
+				PopupTextbox(control_);
+			};
+		}
+		public static void PopupTextboxOnControlClick(Control[] controls)
+		{
+			foreach (var control_ in controls)
+				control_.MouseClick += (sender, mouseEventArgs) => {
+					PopupTextbox(control_);
+				};
+		}
+
+		public static void PopupTextbox(Control sender_)
+		{
+			System.Windows.Forms.Form form1 = new Form();
+			form1.Width = 500;
+			form1.Height = 600;
+			//logForm.Resize += resizeTextarea; 
+			form1.Text = @"Textarea";
+			form1.TopMost = true;
+			form1.TopLevel = true;
+			form1.Opacity = 0.95;
+			form1.StartPosition = FormStartPosition.CenterScreen;
+			//
+			var marg_bottom = 30;
+			var hPadd = 10;
+			System.Windows.Forms.RichTextBox textarea = new System.Windows.Forms.RichTextBox();
+			form1.Controls.Add(textarea);
+			textarea.Multiline = true;
+			textarea.Width = textarea.Parent.Width - hPadd * 3;
+			textarea.Height = textarea.Parent.Height - marg_bottom * 3;
+			textarea.Text = sender_.Text;
+			textarea.Location.Offset( hPadd, hPadd);
+
+			//
+			System.Windows.Forms.Button saveButton = new System.Windows.Forms.Button();
+			form1.Controls.Add(saveButton);
+			saveButton.Text = "OK";
+			saveButton.Location.Offset(textarea.Parent.Width / 2 - saveButton.Width / 2, form1.Height - saveButton.Height * 3);// new System.Drawing.Point();
+			// object sender, EventArgs e   // new EventHandler(delegate (Object o, EventArgs a) { //snip });
+			// EventHandler handler = (s, e) => MessageBox.Show("Woho"); 
+			saveButton.Click += (sender, args) => { sender_.Text = textarea.Text; form1.Close(); };
+			//
+			form1.Show();
+			//textarea.Font = new SimpleFont(textarea.Font.FontFamily, 11);
+		}
 		public static void destroyForm(bool dispose)
 		{
 			//if(logForm != null) logForm.Close();
@@ -4377,27 +4957,6 @@ namespace PuvoxLibrary
 
 		#region Log 
 
-		public static void enableExceptions()
-		{
-			enableExceptions(false);
-		}
-
-
-		public static void enableExceptions(bool show = false)
-		{
-			AppDomain.CurrentDomain.FirstChanceException += delegate (object sender, FirstChanceExceptionEventArgs eventArgs)
-			{
-				StackTrace stackTrace = new StackTrace();
-				MethodBase method = stackTrace.GetFrame(1).GetMethod();
-				string text = Methods.ExceptionMessage(eventArgs.Exception, method, "");
-				if (show || Methods.IsDeveloperMachine())
-				{
-					m(text);
-					return;
-				}
-				log(text);
-			};
-		}
 
 		public static void log(string text)
 		{
@@ -4423,41 +4982,299 @@ namespace PuvoxLibrary
 			File.AppendAllText(location, text);
 		}
 
-		[STAThread]
-		public static void catchAllExceptions()
+
+
+		//Microsoft.VisualBasic.Interaction.InputBox("Question?","Title","Default Text");
+
+		public static string tempLocation_set = "";
+		public static string showFormLocation()
 		{
-			AppDomain.CurrentDomain.UnhandledException += Methods.HandleUnhandledException;
+			if (tempLocation_set != "") return tempLocation_set;
+			Form form = new Form(); form.Width = 400; form.Height = 50;
+			tempLocation_set = System.IO.Path.GetTempPath() + "/temp_log_" + DateTime.Now.ToShortDateString();
+			var textbox = new TextBox(); textbox.Top = 0; textbox.Left = 0; form.Controls.Add(textbox); textbox.Text = tempLocation_set;
+			// Show testDialog as a modal dialog and determine if DialogResult = OK.
+			if (form.ShowDialog() == DialogResult.OK)
+			{
+			}
+			tempLocation_set = textbox.Text;
+			form.Dispose();
+			return tempLocation_set;
 		}
 
 
-		public static void HandleUnhandledException(object sender, UnhandledExceptionEventArgs e)
+		/*
+		Thread mThread = new Thread(delegate ()
 		{
-			if (!Methods.inCatchAllLoop)
+			StratControlBox = new StratControl(StratIDs);
+			StratControlBox.ShowDialog();
+		});
+
+		mThread.SetApartmentState(ApartmentState.STA);
+
+        mThread.Start();
+		*/
+		public static Task StartSTATask(Action func)
+		{
+			var tcs = new TaskCompletionSource<object>();
+			var thread = new Thread(() =>
 			{
-				Methods.inCatchAllLoop = true;
-				m(sender);
-				Methods.inCatchAllLoop = false;
+				try
+				{
+					func();
+					tcs.SetResult(null);
+				}
+				catch (Exception e)
+				{
+					tcs.SetException(e);
+				}
+			});
+			thread.SetApartmentState(ApartmentState.STA);
+			thread.Start();
+			return tcs.Task;
+		}
+
+
+
+		private static bool CatchAllExceptions_EnabledAlready = false;
+		private static bool CatchAllExceptions_FileOrWindow = true;
+
+		//[STAThread]
+		public static void CatchAllExceptions()
+		{
+			CatchAllExceptions(true, false);
+		}
+		public static void CatchAllExceptions(bool firstChaneException)
+		{
+			CatchAllExceptions(firstChaneException, false);
+		}
+		public static void CatchAllExceptions(bool firstChaneException, bool FileOrWindow)
+		{
+			if (CatchAllExceptions_EnabledAlready) return;
+			CatchAllExceptions_EnabledAlready = true;
+
+			if (firstChaneException) 
+				AppDomain.CurrentDomain.FirstChanceException += HandleUnhandledException;
+			else
+				AppDomain.CurrentDomain.UnhandledException += HandleUnhandledException; 
+			CatchAllExceptions_FileOrWindow = FileOrWindow;
+		}
+
+		public static bool inCatchAllLoop = false;
+		public static void HandleUnhandledException(object sender, object e)
+		{
+			if (!inCatchAllLoop)
+			{
+				// new System.Diagnostics.StackTrace() GetFrame(1).GetMethod();
+				inCatchAllLoop = true;
+				var finalStr = "";
+				if (e is UnhandledExceptionEventArgs)
+					finalStr = ((UnhandledExceptionEventArgs)e).ExceptionObject.ToString();
+				else if (e is System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs)
+					finalStr = ExceptionMessage( ((System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs)e).Exception ) ;
+				else
+					finalStr = e.ToString();
+
+				AddTextToPopup("catchExceptionsForm", finalStr);
+				inCatchAllLoop = false;
 			}
 		}
 
-
-		public static void logError(object obj_)
-		{
-			FileOperations.Write(errorLogFile, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine + obj_.ToString() + Environment.NewLine);
-		}
-
-		public static bool isDeveloperMode(string key)
+		private static Dictionary<string, Form> allPopupForms = new Dictionary<string, Form>();
+		private static Dictionary<string, string> allPopupTexts = new Dictionary<string, string>();
+		private static readonly object allFormLock = new object();
+		private static bool popupform_exists(string uniqName) { return allPopupForms.ContainsKey(uniqName) && allPopupForms[uniqName] != null && !allPopupForms[uniqName].IsDisposed; }
+		public static void AddTextToPopup(string containerKey, string message)
 		{
 			try
 			{
-				string path = "c:\\debug_c#_developer_mode.txt";
-				return File.Exists(path) && File.ReadAllText(path).Contains(key + ",");
+				//Task.Run(() => {
+				lock(allFormLock)
+				{
+					var uniqString = containerKey;
+					var textareaName = uniqString + "_textarea";
+
+					var newTxt = Environment.NewLine + Environment.NewLine + "•" + DatetimeText() + " ::: "+ message;
+
+					if (!allPopupTexts.ContainsKey(uniqString)) allPopupTexts[uniqString] = "";
+					allPopupTexts[uniqString] =   allPopupTexts[uniqString] + newTxt;
+
+					//
+
+					if ( !popupform_exists (uniqString) )
+					{
+						var padding = 30;
+						allPopupForms[uniqString] = new Form() { Width = 600, Height = 600 };
+						allPopupForms[uniqString].TopMost = true;
+
+						var TX = new RichTextBox();
+						TX.Name = textareaName;
+
+						TX.Width = allPopupForms[uniqString].Width - padding;
+						TX.Height = allPopupForms[uniqString].Height - padding-20;
+						TX.Location.Offset(5,5);
+						allPopupForms[uniqString].Controls.Add(TX);
+						/*
+							//all other approaches (task.run & StaThread, with show/showdialog...), fail beacuse of thread lock
+							var act = new Action(() =>
+							{
+								if (popupform_exists(uniqString))
+								{
+									var ctrl = ControlGetByName(allPopupForms[uniqString], textareaName);
+									Control_Set(ctrl, "text", allPopupTexts[uniqString] );
+
+								}
+							});
+							Timer(act, 2 * 1000, true);
+						*/
+					}
+
+
+					if (CatchAllExceptions_FileOrWindow)
+                    {
+						WriteTempFile("puvox_c#_exceptions", allPopupTexts[uniqString], false);
+					}
+                    else
+                    {
+						var ctrl = ControlGetByName(allPopupForms[uniqString], textareaName);
+						Control_Set(ctrl, "text", allPopupTexts[uniqString], false);
+						if (!allPopupForms[uniqString].Visible) { allPopupForms[uniqString].Show(); }
+					}
+				}
+				//});
 			}
-			catch
-			{
-			}
-			return false;
+			catch (Exception ex2) { }
 		}
+				
+
+
+	   public static DialogResult ShowInputDialog(ref string input)
+	   {
+		   System.Drawing.Size size = new System.Drawing.Size(200, 70);
+		   Form inputBox = new Form();
+
+		   inputBox.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+		   inputBox.ClientSize = size;
+		   inputBox.Text = "Name";
+
+		   System.Windows.Forms.TextBox textBox = new TextBox();
+		   textBox.Size = new System.Drawing.Size(size.Width - 10, 23);
+		   textBox.Location = new System.Drawing.Point(5, 5);
+		   textBox.Text = input;
+		   inputBox.Controls.Add(textBox);
+
+		   Button okButton = new Button();
+		   okButton.DialogResult = System.Windows.Forms.DialogResult.OK;
+		   okButton.Name = "okButton";
+		   okButton.Size = new System.Drawing.Size(75, 23);
+		   okButton.Text = "&OK";
+		   okButton.Location = new System.Drawing.Point(size.Width - 80 - 80, 39);
+		   inputBox.Controls.Add(okButton);
+
+		   Button cancelButton = new Button();
+		   cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+		   cancelButton.Name = "cancelButton";
+		   cancelButton.Size = new System.Drawing.Size(75, 23);
+		   cancelButton.Text = "&Cancel";
+		   cancelButton.Location = new System.Drawing.Point(size.Width - 80, 39);
+		   inputBox.Controls.Add(cancelButton);
+
+		   inputBox.AcceptButton = okButton;
+		   inputBox.CancelButton = cancelButton;
+
+		   DialogResult result = inputBox.ShowDialog();
+		   input = textBox.Text;
+		   return result;
+	   }
+	   //string input="hede";
+	   //ShowInputDialog(ref input);
+
+	   public static class Prompt
+	   {
+		   public static string ShowDialog(string text, string caption)
+		   {
+			   Form prompt = new Form()
+			   {
+				   Width = 500,
+				   Height = 150,
+				   FormBorderStyle = FormBorderStyle.FixedDialog,
+				   Text = caption,
+				   StartPosition = FormStartPosition.CenterScreen
+			   };
+			   Label textLabel = new Label() { Left = 50, Top = 20, Text = text };
+			   TextBox textBox = new TextBox() { Left = 50, Top = 50, Width = 400 };
+			   Button confirmation = new Button() { Text = "Ok", Left = 350, Width = 100, Top = 70, DialogResult = DialogResult.OK };
+			   confirmation.Click += (sender, e) => { prompt.Close(); };
+			   prompt.Controls.Add(textBox);
+			   prompt.Controls.Add(confirmation);
+			   prompt.Controls.Add(textLabel);
+			   prompt.AcceptButton = confirmation;
+
+			   return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+		   }
+	   }
+
+
+
+	   /*
+			   AppDomainSetup mysetup = AppDomain.CurrentDomain.SetupInformation;
+			   mysetup.ApplicationBase = PEPatch.GetDirectoryFromPath(MI.inputfile);
+			   mysetup.ConfigurationFile = MI.inputfile + ".config";
+
+			   string cpath = Environment.GetEnvironmentVariable("Path");
+			   if (!cpath.Contains(mysetup.ApplicationBase))
+			   {
+				   cpath = cpath + ";" + mysetup.ApplicationBase;
+				   Environment.SetEnvironmentVariable("Path", cpath);
+			   }
+	   */
+
+		public static string ReadFileSafe(string path)
+		{
+			if (File.Exists(path))
+			{
+				lock (path)
+				{
+					return File.ReadAllText(path);
+				}
+			}
+			return "";
+		}
+		public static void WriteFileSafe(string path, string txt)
+		{
+			if (File.Exists(path))
+			{
+				lock (path)
+				{
+					File.WriteAllText(path, txt);
+				}
+			}
+		}
+		public static void AppendFileSafe(string path, string txt)
+		{
+			if (File.Exists(path))
+			{
+				lock (path)
+				{
+					File.AppendAllText(path, txt);
+				}
+			}
+		}
+
+		public static string DatetimeText()
+        {
+			return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+		}
+		public static void logError(object obj_)
+		{
+			FileOperations.Write(errorLogFile, DatetimeText() + Environment.NewLine + obj_.ToString() + Environment.NewLine);
+		}
+
+		private static string isDeveloperMode_contents = "-1";
+		public static bool isDeveloperMode(string key) { try { string file = "c:\\debug_c#_developer_mode.txt"; if (isDeveloperMode_contents == "-1") { if (File.Exists(file)) isDeveloperMode_contents = ReadFileSafe(file); } bool enabled = isDeveloperMode_contents.Contains(key + "+"); if (!enabled && !isDeveloperMode_contents.Contains(key + "-")) { isDeveloperMode_contents += Environment.NewLine + key + "-"; WriteFileSafe(file, isDeveloperMode_contents); } return enabled; } catch { return true; } return true; }
+
+
 
 		public static string ExceptionForDeveloper(Exception e, object targetObj)
 		{
@@ -4480,87 +5297,67 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-
-		public static string ExceptionMessage(Exception e, object targetObj)
-		{
-			return Methods.ExceptionMessage(e, targetObj, "");
-		}
-
-		public static string ExceptionMessage(Exception e, object targetObj, bool echo_or_return)
-		{
-			string txt = Methods.ExceptionMessage(e, targetObj, "");
-			if (echo_or_return) { m(txt); return ""; }
-			return txt;
-		}
 		//  public static void ExceptionMessage(Exception e, object obj_, System.Reflection.MethodBase method, string msg, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = 0)
 
-		public static string ExceptionMessage(Exception e, object obj_, string customMessage)
+		public static void ExcPopup(Exception e, object obj_)
 		{
-			string text = "";
-			string text2 = Methods.nl_ + "_________________" + Methods.nl_;
-			StackFrame frame = new StackTrace(e, true).GetFrame(0);
-			int fileLineNumber = frame.GetFileLineNumber();
-			int fileColumnNumber = frame.GetFileColumnNumber();
-			string fileName = frame.GetFileName();
-			text = text + "======================" + Methods.nl_;
-			if (e.Source != null)
+			m(ExceptionMessage(e, obj_));
+		}
+		public static void OpenLinkInBrowser(string url)
+		{
+			System.Diagnostics.Process.Start(url);
+		}
+		public static void OpenUrl(string url)
+		{
+			System.Diagnostics.Process.Start(url);
+		}
+		public static string ExceptionMessage(Exception e)
+		{
+			return ExceptionMessage(e, null);
+		}
+
+		public static string ExceptionMessage(Exception e, object obj_)
+		{
+			string result = "";
+			string divider = nl_ + "_________________" + nl_;
+			//
+			var stack = new StackTrace(e, true);
+			StackFrame errFrame = stack.GetFrame(0);
+			int line = errFrame.GetFileLineNumber();
+			int column = errFrame.GetFileColumnNumber();
+			string fileName = errFrame.GetFileName();
+			//
+			result += "======================" + nl_;
+
+				if (e.Source != null)
+			result += "• Source				: " + e.Source.ToString() + divider; //dll name. full path: e.TargetSite.ReflectedType.Assembly.Location
+				if (obj_ != null && obj_.GetType() != null)
+			result += "• Target object		: " + obj_.GetType().FullName + divider;
+			result += "• Method				: ";
+			foreach (var frame in stack.GetFrames().Reverse())
 			{
-				text = text + "• Source\t\t\t\t: " + e.Source.ToString() + text2;
+				var method_ = frame.GetMethod();
+				result += " > " + (method_ != null ? method_.Name : "method_name_not_detected");
+			} 
+			result += " [Line:" + (line != 0 ? line.ToString() : "") +  (column != 0 ? column.ToString() : "")+"]";
+			if (line != 0)
+			{
+#if !NET20 && !NET35
+				try { if (fileName.EndsWith(".cs")) { string str1 = System.IO.File.ReadLines(fileName).Skip(line - 1).Take(1).First(); if (string.IsNullOrEmpty(str1)) return str1; str1 = str1.Substring(column - 1, Math.Min(str1.Length, 30)); result += "--->   " + str1; } } catch { }
+#endif
 			}
-			if (obj_ != null && obj_.GetType() != null)
-			{
-				text = text + "• Target object\t\t: " + obj_.GetType().FullName + text2;
-			}
-			text += "• Method\t\t\t\t: ";
-			IEnumerable<StackFrame> enumerable = new StackTrace(e, true).GetFrames().Reverse<StackFrame>();
-			foreach (StackFrame stackFrame in enumerable)
-			{
-				MethodBase method = stackFrame.GetMethod();
-				text = text + " > " + ((method != null) ? method.Name : "method_name_not_detected");
-			}
-			text += text2;
-			string text3 = text;
-			text = string.Concat(new string[]
-			{
-				text3,
-				"• Line_Column\t\t: ",
-				(fileLineNumber != 0) ? fileLineNumber.ToString() : "not detected",
-				" : ",
-				(fileColumnNumber != 0) ? fileColumnNumber.ToString() : ""
-			});
-			if (fileLineNumber != 0)
-			{
-				try
-				{
-					if (fileName.EndsWith(".cs"))
-					{
-						string text4 = File.ReadLines(fileName).Skip(fileLineNumber - 1).Take(1).First<string>();
-						if (string.IsNullOrEmpty(text4))
-						{
-							return text4;
-						}
-						text4 = text4.Substring(fileColumnNumber - 1, Math.Min(text4.Length, 30));
-						text = text + "--->   " + text4;
-					}
-				}
-				catch
-				{
-				}
-			}
-			text += text2;
-			text = text + "• Message\t\t\t: " + e.Message + text2;
+			result += divider;
+
+			result += "• Message			: " + e.Message + divider;
 			if (e.InnerException != null)
-			{
-				text = text + "• InnerException\t\t: " + e.InnerException.Message + text2;
-			}
-			text = text + "• User_message\t\t: " + customMessage + text2;
-			string text5 = text;
-			text = string.Concat(new string[]
-			{
-				text5, "• StackTrace\t\t\t: ", Methods.nl_, " ----- ", e.StackTrace, text2
-			});
-			text = text + "======================" + Methods.nl_;
-			return text;
+				result += "• InnerException		: " + e.InnerException.Message + divider;
+			result += "• StackTrace			: " + nl_ + " ----- " + e.StackTrace + divider;
+			// Target Method info
+			//      if (e.TargetSite != null)
+			//result += "• TargetSite:     " + e.TargetSite.ToString() + divider;
+
+			result += "======================" + nl_;
+			return result;
 		}
 
 		public static string stackFramesString(StackTrace stktr)
@@ -4673,7 +5470,6 @@ namespace PuvoxLibrary
 
 		internal static BindingFlags AllBindingFlags_noinherit = BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod | BindingFlags.CreateInstance | BindingFlags.GetField | BindingFlags.SetField | BindingFlags.GetProperty | BindingFlags.SetProperty | BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty | BindingFlags.ExactBinding | BindingFlags.SuppressChangeType | BindingFlags.OptionalParamBinding | BindingFlags.IgnoreReturn;
 
-		public static bool inCatchAllLoop = false;
 		//private static object fileCheckObj = new object(); 
 		//public static string errorLogFile = Environment.GetEnvironmentVariable("tmp") + "\\_errorlogs_c#.log"; 
 		public static string nl_ = Environment.NewLine;
@@ -4684,11 +5480,11 @@ namespace PuvoxLibrary
 
 		public void dialogMessage()
 		{
-			var dialogResult = MessageBox.Show("Message", "Title", MessageBoxButtons.OKCancel);
+			var dialogResult = System.Windows.Forms.MessageBox.Show("Message", "Title", MessageBoxButtons.OKCancel);
 			if (dialogResult == System.Windows.Forms.DialogResult.OK)
-				MessageBox.Show("OK Clicked");
+				System.Windows.Forms.MessageBox.Show("OK Clicked");
 			else
-				MessageBox.Show("Cancel Clicked");
+				System.Windows.Forms.MessageBox.Show("Cancel Clicked");
 		}
 
 
@@ -4749,10 +5545,10 @@ namespace PuvoxLibrary
 
 namespace PuvoxLibrary
 {
-	
+
 	public static class FileOperations
 	{
-		
+
 		public static void Write(string path, object obj_)
 		{
 			try
@@ -4769,7 +5565,7 @@ namespace PuvoxLibrary
 			}
 		}
 
-		
+
 		public static void Hide(string path)
 		{
 			try
@@ -4792,20 +5588,20 @@ namespace PuvoxLibrary
 		}
 
 		public static bool setAttribute(object obj_, string propertyName, string attributeName, object val_)
-        {
-            // doesnt work
-            var attrs = obj_.GetType()
-              .GetProperty(propertyName)
-              .GetCustomAttributes(false)
-              .ToDictionary(a => a.GetType().Name, a => a);
-            return true;
+		{
+			// doesnt work
+			var attrs = obj_.GetType()
+			  .GetProperty(propertyName)
+			  .GetCustomAttributes(false)
+			  .ToDictionary(a => a.GetType().Name, a => a);
+			return true;
 
-            //var ba = (attrs["BrowsableAttribute"] as BrowsableAttribute);
-            //var isBrowsable = ba.GetType().GetField("Browsable", System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            //if (isBrowsable != null) { isBrowsable.SetValue(ba, (bool)val_); return true; }
-            //return false;
+			//var ba = (attrs["BrowsableAttribute"] as BrowsableAttribute);
+			//var isBrowsable = ba.GetType().GetField("Browsable", System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+			//if (isBrowsable != null) { isBrowsable.SetValue(ba, (bool)val_); return true; }
+			//return false;
 
-        }
+		}
 		public static void Write(string path, object obj_, bool hiddenFile)
 		{
 			FileOperations.Write(path, obj_);
@@ -4815,7 +5611,7 @@ namespace PuvoxLibrary
 			}
 		}
 
-		
+
 		private static ReaderWriterLock locker = new ReaderWriterLock();
 	}
 }
@@ -4825,7 +5621,7 @@ namespace PuvoxLibrary
 
 namespace HelperLibraries
 {
- 
+
 	#region JSON
 	// https://stackoverflow.com/questions/14967618/deserialize-json-to-class-manually-with-reflection/50492864#50492864
 	//new update here, but doesnt work well : http://qaru.site/questions/6250657/deserialize-json-to-class-manually-with-reflection
@@ -5056,7 +5852,7 @@ namespace PuvoxLibrary
 	public class Program
 	{
 		public string baseDomain;// = "https://puvox.software/";
-		public string apiBaseDomain= "https://license.puvox.software/";
+		public string apiBaseDomain = "https://license.puvox.software/";
 		public string baseResponsePath = "responses.php?";
 		public string baseCompanyName = "Puvox";
 		public string baseContactPath = "contact";
@@ -5066,11 +5862,11 @@ namespace PuvoxLibrary
 		public string Language;
 		public string BaseProductUrl;
 		public string RegRootOfThisProg;
-		public string responseUrl; 
+		public string responseUrl;
 		public string contactUrl;
 		public bool initialized;
 
-		public static void m(object obj) { PuvoxLibrary.Methods.m( obj.ToString() ); }
+		public static void m(object obj) { PuvoxLibrary.Methods.m(obj.ToString()); }
 		public static void cl(object obj) { Console.WriteLine(obj == null ? "null" : obj.ToString()); System.Diagnostics.Debug.WriteLine(obj == null ? "null" : obj.ToString()); }
 		private bool isDevelopment { get { return PuvoxLibrary.Methods.IsDeveloperMachine(); } }
 
@@ -5087,12 +5883,12 @@ namespace PuvoxLibrary
 			Version = version;
 			Language = language;
 			BaseProductUrl = productUrl;
-			RegRootOfThisProg = "SOFTWARE\\" + baseCompanyName + "\\" + Slug + "\\"; 
-																		
+			RegRootOfThisProg = "SOFTWARE\\" + baseCompanyName + "\\" + Slug + "\\";
+
 			contactUrl = baseDomain + baseContactPath;
 			initialized = true;
 		}
- 
+
 
 		public string ResponseString = "";
 		public Dictionary<string, object> ResponseHeaders = new Dictionary<string, object>();
@@ -5106,22 +5902,22 @@ namespace PuvoxLibrary
 		}
 
 		//props
-		public string ApiURL()			{ return apiBaseDomain + baseResponsePath + "program=" + PuvoxLibrary.Methods.urlEncode(Slug) + "&version=" + Version; }
-		public bool licensekeySet(string key) { setRegistryValue("licensekey", key); return true; } 
-		public string licensekeyGet() 	{ return getRegistryValue("licensekey", "demo_" + PuvoxLibrary.Methods.RandomString(32)); }
-		internal string status()	{ return ResponseHeaders["status"] as string; } 
-		internal bool licenseAllowed()	{ return ResponseHeaders["status"] as string == "success"; }  //|| ResponseData["confirm_answer"].ToString().Contains("u2")
-		public string licenseErrorMessage() { return (ResponseHeaders["status"] as string) + ":"+ (ResponseHeaders["data"] as string); }
-		public bool isDemo()			{ return licensekeyGet().Contains("demo_"); }
-		public string version()			{ return ResponseData["version"] as string; }
-		internal string confirmAnswer()	{ return ResponseData["confirm_answer"] as string; }
-		internal string country()	{ return IpInfo["country"] as string; }
+		public string ApiURL() { return apiBaseDomain + baseResponsePath + "program=" + PuvoxLibrary.Methods.urlEncode(Slug) + "&version=" + Version; }
+		public bool licensekeySet(string key) { setRegistryValue("licensekey", key); return true; }
+		public string licensekeyGet() { return getRegistryValue("licensekey", "demo_" + PuvoxLibrary.Methods.RandomString(32)); }
+		internal string status() { return ResponseHeaders["status"] as string; }
+		internal bool licenseAllowed() { return ResponseHeaders["status"] as string == "success"; }  //|| ResponseData["confirm_answer"].ToString().Contains("u2")
+		public string licenseErrorMessage() { return (ResponseHeaders["status"] as string) + ":" + (ResponseHeaders["data"] as string); }
+		public bool isDemo() { return licensekeyGet().Contains("demo_"); }
+		public string version() { return ResponseData["version"] as string; }
+		internal string confirmAnswer() { return ResponseData["confirm_answer"] as string; }
+		internal string country() { return IpInfo["country"] as string; }
 
 
 		public bool getResponseData(bool forceNew, int cachedMinutes_)
 		{
 			bool fire = false;
-			if (ResponseData == null || ResponseData.Count==0)
+			if (ResponseData == null || ResponseData.Count == 0)
 			{
 				fire = true;
 			}
@@ -5138,11 +5934,34 @@ namespace PuvoxLibrary
 				if (text == "-1") return false;
 				ResponseString = text;
 				ResponseHeaders = PuvoxLibrary.Methods.deserialize(text);
-				string dataString = (ResponseHeaders["enchint"] as string == "") ? ResponseHeaders["data"] as string : PuvoxLibrary.Methods.EncryptDecrypt.DecryptString(ResponseHeaders["data"] as string, Slug + ResponseHeaders["enchint"] + Version.ToString());
-				ResponseData = PuvoxLibrary.Methods.deserialize(dataString);
-				string ipinfoString = (currentIPinfo != "") ? currentIPinfo : ResponseData["ipinfo"].ToString();
-				IpInfo = PuvoxLibrary.Methods.deserialize(ipinfoString);
-				setRegistryValue("ipinfo", ipinfoString);
+				if (ResponseHeaders == null)
+				{
+					m("Can not get response. 581");
+				}
+				else
+				{
+					if (!ResponseHeaders.ContainsKey("status"))
+					{
+						m("Response from server doesnt have status. 582");
+					}
+					else
+					{
+						if (ResponseHeaders["status"] as string != "success")
+						{
+							m("Response from server doesnt have successfull status. 583");
+						}
+						else
+						{
+							var data = ResponseHeaders["data"] as string;
+							var encrypt_hint = ResponseHeaders["enchint"] as string;
+							string dataString = encrypt_hint == "" ? data : PuvoxLibrary.Methods.EncryptDecrypt.DecryptString(data, Slug + encrypt_hint + Version.ToString());
+							ResponseData = PuvoxLibrary.Methods.deserialize(dataString);
+							string ipinfoString = (currentIPinfo != "") ? currentIPinfo : ResponseData["ipinfo"].ToString();
+							IpInfo = PuvoxLibrary.Methods.deserialize(ipinfoString);
+							setRegistryValue("ipinfo", ipinfoString);
+						}
+					}
+				}
 			}
 			return true;
 		}
@@ -5178,16 +5997,16 @@ namespace PuvoxLibrary
 
 		public bool isCacheSet(string key, int minutes)
 		{
-			return PuvoxLibrary.Methods.isCacheSet( @"Software\Puvox\"+Slug+@"\cachedTimegones\"+key, minutes);
+			return PuvoxLibrary.Methods.isCacheSet(@"Software\Puvox\" + Slug + @"\cachedTimegones\" + key, minutes);
 		}
 
 		public bool fillFormOptions(System.Windows.Forms.Control.ControlCollection coll)
 		{
-			return PuvoxLibrary.Methods.fillFormOptions(coll, RegRootOfThisProg);
-		}  
+			return PuvoxLibrary.Methods.FormOptions_Fill(coll, RegRootOfThisProg);
+		}
 		public bool saveFormOptions(System.Windows.Forms.Control.ControlCollection cts)
 		{
-			return PuvoxLibrary.Methods.saveFormOptions(cts, RegRootOfThisProg);
+			return PuvoxLibrary.Methods.FormOptions_Save(cts, RegRootOfThisProg);
 		}
 
 		public string getFormOption(string key, string two)
@@ -5199,4 +6018,4 @@ namespace PuvoxLibrary
 	}
 }
 
- 
+#endregion

@@ -27,7 +27,7 @@ namespace PuvoxLibrary
     public partial class GoogleSpeech_
     {
         private static void m(object x) { PuvoxLibrary.Methods.m(x, true); }
-        void ex(Exception a) { PuvoxLibrary.Methods.ExceptionMessage(a, this, true); }
+        void ex(Exception a) { PuvoxLibrary.Methods.ExceptionMessage(a, this); }
         public static void cl(object obj) { Console.WriteLine(obj == null ? "null" : obj.ToString()); System.Diagnostics.Debug.WriteLine(obj == null ? "null" : obj.ToString()); }
         private void d(string t) { System.Diagnostics.Debug.Write(t); }
 
@@ -75,50 +75,49 @@ namespace PuvoxLibrary
         {
             {".", new Dictionary<string, string>()
                 {
-                    {"en-US", "dot" },
-                    {"ka-GE", "წერტილი" }
+                    {"en", "dot" },
+                    {"ka", "წერტილი" }
                 }
             },
             {",", new Dictionary<string, string>()
                 {
-                    {"en-US", "comma" },
-                    {"ka-GE", "მძიმე" }
+                    {"en", "comma" },
+                    {"ka", "მძიმე" }
                 }
             },
             {"!", new Dictionary<string, string>()
                 {
-                    {"en-US", "exclamation mark" },
-                    {"ka-GE", "ძახილის ნიშანი" }
+                    {"en", "exclamation mark" },
+                    {"ka", "ძახილის ნიშანი" }
                 }
             },
             {"?", new Dictionary<string, string>()
                 {
-                    {"en-US", "question mark" },
-                    {"ka-GE", "კითხვის ნიშანი" }
+                    {"en", "question mark" },
+                    {"ka", "კითხვის ნიშანი" }
                 }
             },
             {"-", new Dictionary<string, string>()
                 {
-                    {"en-US", "dash" },
-                    {"ka-GE", "ტირე" }
+                    {"en", "dash" },
+                    {"ka", "ტირე" }
                 }
             },
             {"⏎", new Dictionary<string, string>()
                 {
-                    {"en-US", "new line" },
-                    {"ka-GE", "ახალი ხაზი" }
+                    {"en", "new line" },
+                    {"ka", "ახალი ხაზი" }
                 }
             }
         };
 
 
-        public string getIsoLangFromLang(string lang, int method)
+        public string getIsoLangFromLang(string lang)
         {
             string isolang = "en-US";
-            string containsWhat = method == 1 ? lang + "-" : "-" + lang;
             foreach (KeyValuePair<string, string> each in GoogleVoiceLangs(1))
             {
-                if (each.Key.Contains(containsWhat))
+                if (each.Key.Contains(lang + "-") || each.Key.Contains("-"+ lang ) )
                 {
                     isolang = each.Key;
                     break;
@@ -128,7 +127,7 @@ namespace PuvoxLibrary
         }
 
 
-
+        //public string 
 
         public Dictionary<string, string> replacements = new Dictionary<string, string> { };
         public Action<Dictionary<string, string>> replacements_;
@@ -167,11 +166,11 @@ namespace PuvoxLibrary
         public bool isRecording = false;
         CancellationTokenSource waitingTask;
 
-        public void startFuncs(int seconds, string languageCode)
+        public void startFuncs(string languageCode, System.Action onError)
         {
             isRecording = true;
             waitingTask = new CancellationTokenSource();
-            StreamingMicRecognizeAsync( seconds, languageCode, waitingTask.Token);
+            StreamingMicRecognizeAsync(99999, languageCode, waitingTask.Token, onError);
         }
 
         public void stopFuncs()
@@ -196,7 +195,9 @@ namespace PuvoxLibrary
 
         public StreamingRecognizeRequest streamingRecognizeRequest;
         // https://cloud.google.com/speech-to-text/docs/streaming-recognize?hl=ru
-        async Task<object> StreamingMicRecognizeAsync(int seconds, string languageCode, CancellationToken waitingTask)
+        object writeLock = new object(); 
+        bool writeMore = false;
+        async Task<object> StreamingMicRecognizeAsync(int seconds, string languageCode, CancellationToken waitingTask, System.Action onError)
         {
             try
             {
@@ -253,8 +254,8 @@ namespace PuvoxLibrary
                     }
                 });
                 // Read from the microphone and stream to API.
-                object writeLock = new object();
-                bool writeMore = true;
+                writeLock = new object();
+                writeMore = true;
                 var waveIn = new NAudio.Wave.WaveInEvent();
                 waveIn.DeviceNumber = 0;
                 waveIn.WaveFormat = new NAudio.Wave.WaveFormat(16000, 1);
@@ -276,29 +277,39 @@ namespace PuvoxLibrary
                             }
                         }
                     };
-                waveIn.StartRecording();
+                waveIn.StartRecording();        //throws NAduio exception if no recording device found
                 await Task.Delay(TimeSpan.FromSeconds(seconds), waitingTask);
                 // Stop recording and shut down.
                 waveIn.StopRecording();
-                lock (writeLock)
-                {
-                    writeMore = false;
-                }
+                unlock();
                 await streamingCall.WriteCompleteAsync();
                 await printResponses;
             }
             catch (TaskCanceledException taskCanceled)
             {
                 Debug.WriteLine(taskCanceled.Message);
+                if (onError != null) onError();
+            }
+            catch (NAudio.MmException nmEx)
+            {
+                unlock();
+                MessageBox.Show("Probably, no microhpone found. Error:"+nmEx.Message);
+                if (onError != null) onError();
             }
             catch (Exception e)
             {
                 m(e);
-                stopFuncs();
-            }
+                if (onError != null) onError();
+            } 
             return 0;
         }
 
+        void unlock() {
+            lock (writeLock)
+            {
+                writeMore = false;
+            }
+        }
          
 
 
