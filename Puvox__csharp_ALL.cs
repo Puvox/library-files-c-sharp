@@ -1910,6 +1910,10 @@ namespace PuvoxLibrary
 
 		public static int GenerateRandom(int min, int max)
 		{
+			return Random(min, max);
+		}
+		public static int Random(int min, int max)
+		{
 			var seed = Convert.ToInt32(System.Text.RegularExpressions.Regex.Match(Guid.NewGuid().ToString(), @"\d+").Value);
 			return new Random(seed).Next(min, max);
 		}
@@ -3096,15 +3100,16 @@ namespace PuvoxLibrary
 		// 			 Timer( () => { }, 30 * 1000, false);
 		//i.e.        Timer( new Action<object, System.Timers.ElapsedEventArgs>((object sender, System.Timers.ElapsedEventArgs e) => { }), 30 * 1000, false);
 		// 			 Timer( new Action<object, object>((object sender, object e) => { }), 30 * 1000, false);
-		public static void Timer(Action myMethod, int interval, bool autoreset)
+		public static System.Timers.Timer Timer(Action myMethod, int intervalMS, bool autoreset)
 		{
 			System.Timers.Timer timer = new System.Timers.Timer();
 			//timer.Elapsed += myMethod.Invoke;   //Action<object, System.Timers.ElapsedEventArgs> myMethod
 			//timer.Elapsed += new System.Timers.ElapsedEventHandler((object a, System.Timers.ElapsedEventArgs b) => myMethod());
 			timer.Elapsed += new Action<object, System.Timers.ElapsedEventArgs>((object a, System.Timers.ElapsedEventArgs b) => myMethod()).Invoke;
-			timer.Interval = (double)interval;
+			timer.Interval = (double)intervalMS;
 			timer.AutoReset = autoreset;
 			timer.Start();
+			return timer;
 		}
 		// Standalone:
 		// System.Threading.Tasks.Task.Delay(3000).ContinueWith(t => init());
@@ -3118,7 +3123,91 @@ namespace PuvoxLibrary
 
 
 
+		public class DateUtils
+		{
+			public static DateTime ParseGMTString(string gmtStr)
+			{
+				return DateTime.ParseExact(gmtStr, "yyyy-MM-dd HH:mm:ss Z", CultureInfo.InvariantCulture);
+			}
 
+			public static DateTime ParseDatePartFromGMTString(string gmtStr)
+			{
+				return DateTime.ParseExact(gmtStr.Substring(0, 10), "yyyy-MM-dd", CultureInfo.InvariantCulture);
+			}
+
+			public static bool IsMidnightOfToday(DateTime time)
+			{
+				DateTime now = DateTime.Now;
+				return time.Year == now.Year && time.Month == now.Month && time.Day == now.Day && time.Hour == 0 && time.Minute == 0 && time.Second == 0;
+			}
+
+			public static DateTime ConvertToUtc(DateTime time, bool unspecificAsLocal)
+			{
+				if (time.Kind == DateTimeKind.Utc)
+				{
+					return time;
+				}
+				if (time.Kind == DateTimeKind.Unspecified)
+				{
+					return new DateTime(time.Ticks, unspecificAsLocal ? DateTimeKind.Local : DateTimeKind.Utc).ToUniversalTime();
+				}
+				if (time.Kind == DateTimeKind.Local)
+				{
+					return time.ToUniversalTime();
+				}
+				throw new Exception(string.Format("Unsupported DateTime.Kind {0}", time.Kind));
+			}
+
+			public static long ConvertToTimestamp(DateTime time, bool unspecificAsLocal)
+			{
+				return (long)DateUtils.ConvertToUtc(time, unspecificAsLocal).Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+			}
+
+			public static long ConvertToTimestampMili(DateTime time, bool unspecificAsLocal)
+			{
+				return (long)DateUtils.ConvertToUtc(time, unspecificAsLocal).Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+			}
+
+			public static DateTime TimestampToUtcDateTime(long timestamp)
+			{
+				return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)timestamp);
+			}
+
+			public static DateTime TimestampMiliToUtcDateTime(long timestampMili)
+			{
+				return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds((double)timestampMili);
+			}
+
+			public static DateTime TimestampToUtcDateTimeUnspecified(long timestamp)
+			{
+				return new DateTime(DateUtils.TimestampToUtcDateTime(timestamp).Ticks, DateTimeKind.Unspecified);
+			}
+
+			public static DateTime TimestampMiliToUtcDateTimeUnspecified(long timestampMili)
+			{
+				return new DateTime(DateUtils.TimestampMiliToUtcDateTime(timestampMili).Ticks, DateTimeKind.Unspecified);
+			}
+
+			public static DateTime TimestampToLocalDateTime(long timestamp)
+			{
+				return DateUtils.TimestampToUtcDateTime(timestamp).ToLocalTime();
+			}
+
+			public static DateTime TimestampMiliToLocalDateTime(long timestampMili)
+			{
+				return DateUtils.TimestampMiliToUtcDateTime(timestampMili).ToLocalTime();
+			}
+
+			public static DateTime TimestampToLocalDateTimeUnspecified(long timestamp)
+			{
+				return new DateTime(DateUtils.TimestampToLocalDateTime(timestamp).Ticks, DateTimeKind.Unspecified);
+			}
+
+			public static DateTime TimestampMiliToLocalDateTimeUnspecified(long timestampMili)
+			{
+				return new DateTime(DateUtils.TimestampMiliToLocalDateTime(timestampMili).Ticks, DateTimeKind.Unspecified);
+			}
+		}
 
 
 
@@ -3710,7 +3799,12 @@ namespace PuvoxLibrary
 			return str.Replace("      ", " ").Replace("     ", " ").Replace("    ", " ").Replace("   ", " ").Replace("  ", " ").Replace(Environment.NewLine, "").Replace("\t", "");
 		}
 
+		public static string PregReplace( String input, string pattern, string replacement)
+		{
+			input = Regex.Replace(input, pattern, replacement);
 
+			return input;
+		}
 
 
 
@@ -3809,11 +3903,11 @@ namespace PuvoxLibrary
 				IEnumerable enumerable = obj as IEnumerable;
 				if (enumerable != null)
 				{
-					bool flag = false;
+					bool prefixed = false;
 					foreach (object obj2 in enumerable)
 					{
-						text = text + ((!flag && !prefix_.Contains(nl_)) ? "" : prefix_) + " ::: " + obj2.ToString();
-						flag = true;
+						text = text + ((!prefixed && !prefix_.Contains(nl_)) ? "" : prefix_) + " ::: " + (obj2==null ? "null" : obj2.ToString());
+						prefixed = true;
 					}
 				}
 			}
@@ -4224,6 +4318,61 @@ namespace PuvoxLibrary
 			return result;
 		}
 
+
+
+
+		public class CompareObjects
+		{
+			class IgnorePropertyCompareAttribute : Attribute { }
+ 
+
+			class PropertyCompareResult
+			{
+				public string Name { get; private set; }
+				public object OldValue { get; private set; }
+				public object NewValue { get; private set; }
+
+				public PropertyCompareResult(string name, object oldValue, object newValue)
+				{
+					Name = name;
+					OldValue = oldValue;
+					NewValue = newValue;
+				}
+			}
+
+			private static List<PropertyCompareResult> DoCompare<T>(T oldObject, T newObject)
+			{
+				PropertyInfo[] properties = typeof(T).GetProperties();
+				List<PropertyCompareResult> result = new List<PropertyCompareResult>();
+
+				foreach (PropertyInfo pi in properties)
+				{
+					if (pi.CustomAttributes.Any(ca => ca.AttributeType == typeof(IgnorePropertyCompareAttribute)))
+					{
+						continue;
+					}
+
+					object oldValue = pi.GetValue(oldObject), newValue = pi.GetValue(newObject);
+
+					if (!object.Equals(oldValue, newValue))
+					{
+						result.Add(new PropertyCompareResult(pi.Name, oldValue, newValue));
+					}
+				}
+
+				return result;
+			}
+
+			public static List<string> Compare(object a1, object a2)
+            {
+				List<string> lst = new List<string>();
+				foreach (PropertyCompareResult resultItem in DoCompare(a1, a2))
+				{
+					lst.Add("  Property name: "+ resultItem.Name+"-- old: " + (resultItem.OldValue ?? "<null>")+", new: "+ (resultItem.NewValue ?? "<null>"));
+				}
+				return lst;
+			}
+		}
 		#endregion
 
 
@@ -4239,7 +4388,12 @@ namespace PuvoxLibrary
 			return new Dictionary<string, string>() { { "auto", "Automatic" }, { "af", "Afrikaans" }, { "sq", "Albanian" }, { "am", "Amharic" }, { "ar", "Arabic" }, { "hy", "Armenian" }, { "az", "Azerbaijani" }, { "eu", "Basque" }, { "be", "Belarusian" }, { "bn", "Bengali" }, { "bs", "Bosnian" }, { "bg", "Bulgarian" }, { "ca", "Catalan" }, { "ceb", "Cebuano" }, { "ny", "Chichewa" }, { "zh-cn", "Chinese Simplified" }, { "zh-tw", "Chinese Traditional" }, { "co", "Corsican" }, { "hr", "Croatian" }, { "cs", "Czech" }, { "da", "Danish" }, { "nl", "Dutch" }, { "en", "English" }, { "eo", "Esperanto" }, { "et", "Estonian" }, { "tl", "Filipino" }, { "fi", "Finnish" }, { "fr", "French" }, { "fy", "Frisian" }, { "gl", "Galician" }, { "ka", "Georgian" }, { "de", "German" }, { "el", "Greek" }, { "gu", "Gujarati" }, { "ht", "Haitian Creole" }, { "ha", "Hausa" }, { "haw", "Hawaiian" }, { "iw", "Hebrew" }, { "hi", "Hindi" }, { "hmn", "Hmong" }, { "hu", "Hungarian" }, { "is", "Icelandic" }, { "ig", "Igbo" }, { "id", "Indonesian" }, { "ga", "Irish" }, { "it", "Italian" }, { "ja", "Japanese" }, { "jw", "Javanese" }, { "kn", "Kannada" }, { "kk", "Kazakh" }, { "km", "Khmer" }, { "ko", "Korean" }, { "ku", "Kurdish (Kurmanji)" }, { "ky", "Kyrgyz" }, { "lo", "Lao" }, { "la", "Latin" }, { "lv", "Latvian" }, { "lt", "Lithuanian" }, { "lb", "Luxembourgish" }, { "mk", "Macedonian" }, { "mg", "Malagasy" }, { "ms", "Malay" }, { "ml", "Malayalam" }, { "mt", "Maltese" }, { "mi", "Maori" }, { "mr", "Marathi" }, { "mn", "Mongolian" }, { "my", "Myanmar (Burmese)" }, { "ne", "Nepali" }, { "no", "Norwegian" }, { "ps", "Pashto" }, { "fa", "Persian" }, { "pl", "Polish" }, { "pt", "Portuguese" }, { "ma", "Punjabi" }, { "ro", "Romanian" }, { "ru", "Russian" }, { "sm", "Samoan" }, { "gd", "Scots Gaelic" }, { "sr", "Serbian" }, { "st", "Sesotho" }, { "sn", "Shona" }, { "sd", "Sindhi" }, { "si", "Sinhala" }, { "sk", "Slovak" }, { "sl", "Slovenian" }, { "so", "Somali" }, { "es", "Spanish" }, { "su", "Sundanese" }, { "sw", "Swahili" }, { "sv", "Swedish" }, { "tg", "Tajik" }, { "ta", "Tamil" }, { "te", "Telugu" }, { "th", "Thai" }, { "tr", "Turkish" }, { "uk", "Ukrainian" }, { "ur", "Urdu" }, { "uz", "Uzbek" }, { "vi", "Vietnamese" }, { "cy", "Welsh" }, { "xh", "Xhosa" }, { "yi", "Yiddish" }, { "yo", "Yoruba" }, { "zu", "Zulu" } };
 		}
 
-
+		public static bool IsSimpleType(object obj)
+        {
+			var type = obj.GetType();
+			return type.IsPrimitive || type.IsValueType || new Type[] { typeof(string), typeof(decimal), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan), typeof(Guid) }.Contains(type) || type.IsEnum || Convert.GetTypeCode(type) != TypeCode.Object || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) && IsSimpleType(type.GetGenericArguments()[0]));
+			// obj is Boolean || obj is bool || obj is string || obj is double || obj is float || obj is long || obj is decimal || obj is int);
+		}
 		private static string dump(object obj, BindingFlags bindingFlags, bool execMethods, int maxRecursiveDeep, int currentDeep, string prefix)
 		{
 			string indentPhrase = prefix + " | ";
@@ -4248,19 +4402,28 @@ namespace PuvoxLibrary
 			string NL = Environment.NewLine;
 			List<string> list = new List<string>();
 			Dictionary<string, List<string>> dictionary = new Dictionary<string, List<string>>();
+			; //System.Collections.ObjectModel.Collection 
 
+			string result = "";
+			result = NL + indentPhrase + (currentDeep == 1 ? ("<----------------- START ----------------->") : "-----------") + " >>>>> TYPE: " + obj.GetType().ToString() + " --->" + NL;
 
-			string result = NL + indentPhrase + (currentDeep == 1 ? ("<----------------- START ----------------->") : "-----------")
-				+ " >>>>> TYPE: " + obj.GetType().ToString() + " --->" + NL;
-			try
+			if (obj == null)
 			{
-				string tmp1 = tryEnumerabledString(obj, "__ ");
+				result += "object is NULL";
+			}
+			else if (IsSimpleType(obj))
+			{
+				result += obj.ToString();
+			}
+			else try
+			{
+				string tmp1 = tryEnumerabledString(obj, " ");
 				if (tmp1 != "")
 				{
-
 					result += tmp1;
 				}
 				else
+				{
 					foreach (MemberInfo memberInfo in GetMembersInclPrivateBase_static(obj.GetType(), bindingFlags))
 					{
 						string name_ = "__cant_detect__"; try { name_ = memberInfo.Name; } catch { }
@@ -4387,6 +4550,7 @@ namespace PuvoxLibrary
 						}
 						dictionary[type_].Add(line);
 					}
+				}
 			}
 			catch (Exception e)
 			{
@@ -4402,7 +4566,7 @@ namespace PuvoxLibrary
 				}
 			}
 			result += finalTxt;
-			result = result + indentPhrase + ((currentDeep == 1) ? ("<----------------- END ---------------------->" + NL + NL) : "-----------") + NL;
+			result = result + indentPhrase + ((currentDeep == 1) ? (NL+"<----------------- END ---------------------->" + NL + NL) : "-----------") + NL;
 			return result;
 		}
 
@@ -5319,7 +5483,7 @@ namespace PuvoxLibrary
 		public static string ExceptionMessage(Exception e, object obj_)
 		{
 			string result = "";
-			string divider = nl_ + "_________________" + nl_;
+			string divider = nl_;//  + "_________________" + nl_;
 			//
 			var stack = new StackTrace(e, true);
 			StackFrame errFrame = stack.GetFrame(0);
