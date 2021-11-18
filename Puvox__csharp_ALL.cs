@@ -760,6 +760,10 @@ namespace PuvoxLibrary
 
 
 
+        public static string UppercaseFirst(string str)
+        {
+            var arr = str.ToCharArray(); arr[0] = Char.ToUpperInvariant(arr[0]); return new String(arr);
+        }
 
 
 
@@ -3206,6 +3210,13 @@ namespace PuvoxLibrary
 			public static DateTime TimestampMiliToLocalDateTimeUnspecified(long timestampMili)
 			{
 				return new DateTime(DateUtils.TimestampMiliToLocalDateTime(timestampMili).Ticks, DateTimeKind.Unspecified);
+			}
+
+			public static long epochMS(){
+				return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+				// TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
+				// int secondsSinceEpoch = (int)t.TotalSeconds;
+				// return (UInt64)secondsSinceEpoch * 1000;
 			}
 		}
 
