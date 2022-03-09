@@ -763,8 +763,11 @@ namespace PuvoxLibrary
         public static string UppercaseFirst(string str)
         {
             var arr = str.ToCharArray(); arr[0] = Char.ToUpperInvariant(arr[0]); return new String(arr);
-        }
-
+		}
+		public static List<double> ArrayGetLastItems(List<double> list, int amount)
+        {
+			return Enumerable.Reverse(list).Take(amount).Reverse().ToList();
+		}
 
 
 		public static void ListViewAsListBox(ListView listView)
@@ -1927,6 +1930,10 @@ namespace PuvoxLibrary
 		{
 			return date.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
 		}
+		public static string DateString(DateTime date)
+		{
+			return date.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+		}
 
 		public static string convertBackSlashes(string path)
 		{
@@ -2202,8 +2209,7 @@ namespace PuvoxLibrary
 			form.Text = "Popup Message";
 			form.TopMost = true;
 			form.StartPosition = FormStartPosition.Manual;
-			form.Top = 1;
-			form.Left = 1;
+			controlSetLocation(form, 1, 1);
 			form.Opacity = 0.95;
 			System.Windows.Forms.TextBox textBox = new System.Windows.Forms.TextBox();
 			form.Controls.Add(textBox);
@@ -3374,14 +3380,18 @@ namespace PuvoxLibrary
 		//(System.IO.File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/debug.txt"))
 
 
+		// very slow
 		public static string urlPost(string url)
 		{
 			string result;
 			try
 			{
-				using (WebClient webClient = new WebClient())
+				// System.Net.WebRequest.DefaultWebProxy = null;
+				// System.Net.ServicePointManager.DefaultConnectionLimit = 1000;
+				using (var webClient = new System.Net.WebClient())
 				{
-					byte[] bytes = webClient.UploadValues(url, "POST", new NameValueCollection
+                    webClient.Proxy = null;
+					byte[] bytes = webClient.UploadValues(url, "POST", new System.Collections.Specialized.NameValueCollection
 					{
 						{
 							"param1",
@@ -3403,6 +3413,21 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
+
+		#if RESTSHARP
+		public static string urlPost(string url, Dictionary<string,string> dict)
+        {
+            var client = new RestClient(url);
+            // client.Authenticator = new HttpBasicAuthenticator(username, password);
+            var request = new RestRequest();
+            foreach (var kvp in dict)
+                request.AddParameter(kvp.Key, kvp.Value);
+            //request.AddHeader("header", "value");
+            var response = client.Post(request);  //client.Post<Person>(request);  --.response2.Data.Name;
+            var content = response.Content; // Raw content as string
+            return content;
+        }
+		#endif
 
 		public static string tempFilePathForUrlContent(string url)
 		{
@@ -4058,7 +4083,6 @@ namespace PuvoxLibrary
 		// older propertyset : https://pastebin.com/W3WUDsWg
 		public static bool propertySet(object obj_, string propName, object value)
 		{
-			value.ToString();
 			PropertyInfo propertyInfo = obj_.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault((PropertyInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
 			if (propertyInfo != null)
 			{
@@ -4069,12 +4093,17 @@ namespace PuvoxLibrary
 				}
 				if (isInt(value))
 				{
-					propertyInfo.SetValue(obj_, Convert.ToInt32(value), null);
+					propertyInfo.SetValue(obj_, (int) Convert.ToInt32(value), null);
+					return true;
+				}
+				if (isFloat(value))
+				{
+					propertyInfo.SetValue(obj_, value, null);
 					return true;
 				}
 				if (isDouble(value))
 				{
-					propertyInfo.SetValue(obj_, Convert.ToDouble(value), null);
+					propertyInfo.SetValue(obj_, (double)Convert.ToDouble(value), null);
 					return true;
 				}
 				propertyInfo.SetValue(obj_, value);
@@ -4090,6 +4119,11 @@ namespace PuvoxLibrary
 				if (isInt(value))
 				{
 					fieldInfo.SetValue(obj_, Convert.ToInt32(value));
+					return true;
+				}
+				if (isFloat(value))
+				{
+					fieldInfo.SetValue(obj_, value);
 					return true;
 				}
 				if (isDouble(value))
@@ -4859,6 +4893,24 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
+		public static bool isFloat(object value)
+		{
+			return value is float;
+		}
+		public static bool IsNumber(object value)
+		{
+			return value is sbyte
+					|| value is byte
+					|| value is short
+					|| value is ushort
+					|| value is int
+					|| value is uint
+					|| value is long
+					|| value is ulong
+					|| value is float
+					|| value is double
+					|| value is decimal;
+		}
 
 
 		public static bool isInt(object Expression)
@@ -5104,16 +5156,15 @@ namespace PuvoxLibrary
 			System.Windows.Forms.RichTextBox textarea = new System.Windows.Forms.RichTextBox();
 			form1.Controls.Add(textarea);
 			textarea.Multiline = true;
-			textarea.Width = textarea.Parent.Width - hPadd * 3;
-			textarea.Height = textarea.Parent.Height - marg_bottom * 3;
 			textarea.Text = sender_.Text;
-			textarea.Location.Offset( hPadd, hPadd);
+			controlSetSize(textarea, textarea.Parent.Width - hPadd * 3, textarea.Parent.Height - marg_bottom * 3);
+			controlSetLocation(textarea, hPadd, hPadd);
 
 			//
 			System.Windows.Forms.Button saveButton = new System.Windows.Forms.Button();
 			form1.Controls.Add(saveButton);
 			saveButton.Text = "OK";
-			saveButton.Location.Offset(textarea.Parent.Width / 2 - saveButton.Width / 2, form1.Height - saveButton.Height * 3);// new System.Drawing.Point();
+			controlSetLocation(saveButton, textarea.Parent.Width / 2 - saveButton.Width / 2, form1.Height - saveButton.Height * 3);
 			// object sender, EventArgs e   // new EventHandler(delegate (Object o, EventArgs a) { //snip });
 			// EventHandler handler = (s, e) => MessageBox.Show("Woho"); 
 			saveButton.Click += (sender, args) => { sender_.Text = textarea.Text; form1.Close(); };
@@ -5287,7 +5338,8 @@ namespace PuvoxLibrary
 
 						TX.Width = allPopupForms[uniqString].Width - padding;
 						TX.Height = allPopupForms[uniqString].Height - padding-20;
-						TX.Location.Offset(5,5);
+						TX.Top = 5;
+						TX.Left = 5;
 						allPopupForms[uniqString].Controls.Add(TX);
 						/*
 							//all other approaches (task.run & StaThread, with show/showdialog...), fail beacuse of thread lock
@@ -5320,11 +5372,22 @@ namespace PuvoxLibrary
 			}
 			catch (Exception ex2) { }
 		}
-				
 
 
-	   public static DialogResult ShowInputDialog(ref string input)
-	   {
+		public static void controlSetLocation(Control ctrl, int top, int left)
+		{
+			ctrl.Top = top;
+			ctrl.Left = left;
+		}
+		public static void controlSetSize(Control ctrl, int width, int height)
+		{
+			ctrl.Width = width;
+			ctrl.Height = height;
+		}
+
+		/*
+		public static DialogResult ShowInputDialog(ref string input)
+		{
 		   System.Drawing.Size size = new System.Drawing.Size(200, 70);
 		   Form inputBox = new Form();
 
@@ -5361,6 +5424,7 @@ namespace PuvoxLibrary
 		   input = textBox.Text;
 		   return result;
 	   }
+		*/
 	   //string input="hede";
 	   //ShowInputDialog(ref input);
 
