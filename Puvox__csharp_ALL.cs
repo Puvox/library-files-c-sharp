@@ -718,7 +718,9 @@ namespace PuvoxLibrary
 			var result = sendNotificationCached(message, messageId, cacheFileName);
 			if (result.Contains("_Trigger_"))
 			{
-				result = SendTelegram("chat_id=" + toChannel + "&text=" + Uri.EscapeDataString(message) + "&parse_mode=html&disable_web_page_preview=true", botApiKey);
+				string tgMsg = (new Regex("[<>]")).Replace(message, "");
+				tgMsg =  Uri.EscapeDataString( tgMsg );
+				result = SendTelegram("chat_id=" + toChannel + "&text=" + tgMsg + "&parse_mode=html&disable_web_page_preview=true", botApiKey);
 			}
 			return result;
 		}
@@ -1274,7 +1276,34 @@ namespace PuvoxLibrary
 		}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 		#region Registry
+		private static string RegBaseKey_ = "";
+		public static string RegBaseKey
+		{
+			get
+			{
+				if (RegBaseKey_ == "")
+				{
+					RegBaseKey_ = "SOFTWARE\\ExampleCompany\\" + ProgramName + "\\";
+					//m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); } 
+				}
+				return RegBaseKey_;
+			}
+			set { RegBaseKey_ = value; }
+		}
+
 		public static RegistryHive chosenRegHive = RegistryHive.CurrentUser;    //NT 8 Cannot implicitly convert type 'Microsoft.Win32.RegistryKey' to 'Microsoft.Win32.RegistryHive'	
 
 		public static RegistryKey chosenRegKey = Registry.CurrentUser;
@@ -1315,9 +1344,17 @@ namespace PuvoxLibrary
 
 
 
+		// sample: 
+		//string currentProgSlug = PuvoxLibrary.Methods.getRegistryPathForKey("myNtChangeUpdater", "default_company");
+		//string getOptionValue(string keyName, string defaultValue) { return PuvoxLibrary.Methods.getRegistryValue(currentProgSlug + keyName, defaultValue); }
+		//string setOptionValue(string keyName, string defaultValue) { return PuvoxLibrary.Methods.getRegistryValue(currentProgSlug + keyName, defaultValue); }
 
 		public static Dictionary<string, string> myregs = new Dictionary<string, string>();
-
+		public static string getRegistryPathForKey(string currentAppSlug, string companySlug)
+        {
+			companySlug = companySlug == "" ? "AppSettingsStorage_puvox" : companySlug;
+			return "SOFTWARE\\" + companySlug + "\\" + currentAppSlug + "\\";
+		}
 		public static string regPartFromKey(string key, bool Dir_or_Key)
 		{
 			if (Dir_or_Key)
@@ -1661,6 +1698,16 @@ namespace PuvoxLibrary
 
 
 
+
+
+
+
+
+
+
+
+
+
 		public string MyDictionaryToJson(Dictionary<string, int> dict)
 		{
 			var entries = dict.Select(d =>
@@ -1679,6 +1726,9 @@ namespace PuvoxLibrary
 			return new System.Text.RegularExpressions.Regex(pattern).Replace(input, "");
 		}
 
+		public static string removeNonAlhpa(string input){
+			return (new Regex("[^a-zA-Z0-9 -]")).Replace(input, "");
+		}
 
 		/* doesnt work in C#4.5 native projects
 		#region Color region Brushes
@@ -1983,13 +2033,22 @@ namespace PuvoxLibrary
 			string[] result = new string[0];
 			if (File.Exists(file_location))
 			{
-				result = File.ReadAllText(file_location).Split(new string[]
-				{
-					Environment.NewLine,
-					"\\r"
-				}, StringSplitOptions.None);
+				result = stringLinesArray(File.ReadAllText(file_location) ).ToArray();
 			}
 			return result;
+		}
+
+		public static List<string> stringLinesArray(string textt)
+		{
+			return textt.Split(
+				new string[] { Environment.NewLine, "\n", "\r", },
+				StringSplitOptions.None
+			).ToList().Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+		}
+
+		public static string removeNewLines(string text)
+        {
+			return text.Replace("\n", "").Replace("\r", "").Replace('\n', '\0').Replace('\r', '\0').Replace(Environment.NewLine, "");
 		}
 
 		public static string NewLinedString(string text, int after_how_many_words)
@@ -2527,7 +2586,66 @@ namespace PuvoxLibrary
 			//  }
 			//  textBox1.Invoke(new System.Action(() =>   {    textBox1.Text = txt.ToString();    }));
 		}
-		 
+
+
+
+		// i.e:  PuvoxLibrary.Methods.attachEvents(foundChart, new Action<object>(Print));
+		public static void attachEvents(object obj, Action<object> printAct)
+		{
+			try
+			{
+				if (printAct==null)
+				{
+					printAct("nulllllllll");
+					return;
+				}
+				var bf = BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public;
+				//MethodInfo method = this.GetType().GetMethod("MyEventHandler", bf);
+				var act = (new Action<object, object>((sender, eventargs) => {
+					try
+					{
+						if (sender != null) printAct("SENDER:" + sender.GetType());
+						else printAct("NULL SENDER:");
+						if (eventargs != null)
+						{
+							printAct("EVT:" + eventargs.GetType());
+							if (eventargs is System.EventArgs)
+							{
+								System.EventArgs ee = eventargs as System.EventArgs;
+							}
+						}
+						else printAct("NULL EVT:");
+					}
+					catch (Exception ex)
+					{
+						printAct(ex.ToString());
+					}
+				}));
+				MethodInfo method = act.Method;
+				foreach (var eventInfo in obj.GetType().GetEvents(bf))
+				{
+					try
+					{
+						// Subscribe to the event
+						//EventInfo eventInfo = typeof(ChartControl).GetEvent("TestEvent");
+						printAct(eventInfo.Name);
+						Type type = eventInfo.EventHandlerType;
+						Delegate handler = Delegate.CreateDelegate( type, act.Target, method);//Delegate.CreateDelegate(type, this, method);
+						eventInfo.AddEventHandler(obj, handler);
+					}
+					catch (Exception ex)
+					{
+						printAct(ex.Message);
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				printAct(ex.ToString());
+			}
+		}
+
+
 		private void copyableListView(ListView listView)
 		{
 			listView.KeyDown += (object sender, System.Windows.Forms.KeyEventArgs e) =>
@@ -3173,6 +3291,7 @@ namespace PuvoxLibrary
 				return (long)DateUtils.ConvertToUtc(time, unspecificAsLocal).Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
 			}
 
+	
 			public static long ConvertToTimestampMili(DateTime time, bool unspecificAsLocal)
 			{
 				return (long)DateUtils.ConvertToUtc(time, unspecificAsLocal).Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
@@ -3182,7 +3301,15 @@ namespace PuvoxLibrary
 			{
 				return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)timestamp);
 			}
-
+			
+			public static string ConvertTo24HrString(DateTime time)
+			{
+				return time.ToString("yyyy-MM-dd HH:mm:ss"); // adding ' Z' in the end will results in UTC
+			}
+			public static DateTime DateToUTC2(DateTime dt) { return (new DateTime(dt.Ticks, DateTimeKind.Local)).ToUniversalTime(); }
+			public static DateTime DateToUTC(DateTime dt) { return dt.ToUniversalTime(); }
+			public static string DateToString(DateTime dt) { return dt.ToString("yyyy-MM-ddTHH:mm:ssZ"); }
+			
 			public static DateTime TimestampMiliToUtcDateTime(long timestampMili)
 			{
 				return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds((double)timestampMili);
@@ -3931,28 +4058,28 @@ namespace PuvoxLibrary
 			return "Did not find access modifier";
 		}
 		public static string tryEnumerabledString(object obj) { return tryEnumerabledString(obj, ""); }
-		public static string tryEnumerabledString(object obj, string prefix_)
-		{
-			string text = "";
-			try
-			{
-				IEnumerable enumerable = obj as IEnumerable;
-				if (enumerable != null)
-				{
-					bool prefixed = false;
-					foreach (object obj2 in enumerable)
-					{
-						text = text + ((!prefixed && !prefix_.Contains(nl_)) ? "" : prefix_) + " ::: " + (obj2==null ? "null" : obj2.ToString());
-						prefixed = true;
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				text = text + "[cant enumerate:" + ex.Message + "]";
-			}
-			return text;
-		}
+        public static string tryEnumerabledString(object obj, string prefix_)
+        {
+            string text = "";
+            try
+            {
+                System.Collections.IEnumerable enumerable = obj as System.Collections.IEnumerable;
+                if (enumerable != null)
+                {
+                    bool prefixed = false;
+                    foreach (object obj2 in enumerable)
+                    {
+                        text = text + ((!prefixed && !prefix_.Contains(Environment.NewLine)) ? "" : prefix_) + " ::: " + (obj2 == null ? "null" : obj2.ToString());
+                        prefixed = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                text = text + "[cant enumerate:" + ex.Message + "]";
+            }
+            return text;
+        }
 		/*
 		public static IEnumerable<MemberInfo> GetMembers(Type type, bool getStatic=true, bool getPrivate=true, bool getBases=true) {
 			var memberList = ImmutableList<MemberInfo>.Empty;
@@ -4651,21 +4778,6 @@ namespace PuvoxLibrary
 		}
 
 
-
-		private static string RegBaseKey_ = "";
-		public static string RegBaseKey
-		{
-			get
-			{
-				if (RegBaseKey_ == "")
-				{
-					RegBaseKey_ = "SOFTWARE\\ExampleCompany\\" + ProgramName + "\\";
-					//m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); } 
-				}
-				return RegBaseKey_;
-			}
-			set { RegBaseKey_ = value; }
-		}
 
 		public static string[] removeEmptyStrings(string[] strings)
 		{
@@ -6122,11 +6234,12 @@ namespace PuvoxLibrary
 			Version = version;
 			Language = language;
 			BaseProductUrl = productUrl;
-			RegRootOfThisProg = "SOFTWARE\\" + baseCompanyName + "\\" + Slug + "\\";
+			RegRootOfThisProg = PuvoxLibrary.Methods.getRegistryPathForKey(Slug, baseCompanyName);
 
 			contactUrl = baseDomain + baseContactPath;
 			initialized = true;
 		}
+
 
 
 		public string ResponseString = "";
@@ -6224,13 +6337,13 @@ namespace PuvoxLibrary
 		{
 			return PuvoxLibrary.Methods.RegistryValuesInFolder(RegRootOfThisProg);
 		}
-		public string getRegistryValue(string key, string two)
+		public string getRegistryValue(string keyName, string defaultValue)
 		{
-			return PuvoxLibrary.Methods.getRegistryValue(RegRootOfThisProg + key, two);
+			return PuvoxLibrary.Methods.getRegistryValue(RegRootOfThisProg + keyName, defaultValue);
 		}
-		public bool setRegistryValue(string key, string value)
+		public bool setRegistryValue(string keyName, string value)
 		{
-			PuvoxLibrary.Methods.setRegistryValue(RegRootOfThisProg + key, value);
+			PuvoxLibrary.Methods.setRegistryValue(RegRootOfThisProg + keyName, value);
 			return true;
 		}
 
