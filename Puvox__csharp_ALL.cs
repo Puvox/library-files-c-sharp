@@ -63,24 +63,9 @@ namespace PuvoxLibrary
 {
 	public partial class Methods
 	{
-		#region DateTime
-
-		//  0940 type time-ints
-		public static bool isBetween(DateTime target, DateTime start, DateTime end, bool equality)
-		{
-			int num_middle = int.Parse(target.ToString("HHmm"));
-			int num2 = int.Parse(start.ToString("HHmm"));
-			int num3 = int.Parse(end.ToString("HHmm"));
-			return (equality ? num_middle >= num2 && num_middle <= num3 : num_middle > num2 && num_middle < num3);
-		}
-		public static bool isBetween(DateTime target, int start, int end)
-		{
-			int num = int.Parse(target.ToString("HHmm"));
-			return num >= start && num < end;
-		}
-
+		#region apps
+ 
 		public static string mainDrive { get { return Path.GetPathRoot(Environment.SystemDirectory); } }
-
 
 
 		public static string AppNameRegex = "(XYZXYZ)";
@@ -92,9 +77,7 @@ namespace PuvoxLibrary
 			{ "checkmark", "?" },
 			{ "checkmark2", "\ud83d\uddf9" }
 		};
-
-
-
+ 
 		#region Demo(Trial) period checks
 		// if (demoPeriodGone("demo expired", "2020-05-13")) return;
 		private bool demoPeriodGone_shown;
@@ -147,137 +130,21 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
+ 
 
-
+		public static bool TimeGone(string Key, int minutes)
+		{
+			string registryValue = getRegistryValue("timegone_" + Key);
+			if (string.IsNullOrEmpty(registryValue) || DateTime.Now > DateTime.Parse(registryValue).AddMinutes((double)minutes))
+			{
+				setRegistryValue("timegone_" + Key, DateTime.Now.ToString());
+				return true;
+			}
+			return false;
+		}
 
 		#endregion
-
-
-		public static string timeIntToString(int timenow)
-		{
-			// timenow is i.e. 061055
-			string t = timenow.ToString();
-			string str = t.Length <= 1 ? "00000" + t : (t.Length <= 2 ? "0000" + t : (t.Length <= 3 ? "000" + t : (t.Length <= 4 ? "00" + t : (t.Length <= 5 ? "0" + t : t))));
-			return str;
-		}
-
-		public static TimeSpan timeIntToTimeSpan(int timenow)
-		{
-			DateTime dt;
-			DateTime.TryParseExact(timeIntToString(timenow), "HHmmss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out dt);
-			return dt.TimeOfDay;
-		}
-
-
-
-		public static int CorrectTime(int timenow, int added_or_subtracted)
-		{
-			TimeSpan timeSpan = new TimeSpan(timenow / 100, timenow % 100, 0) + TimeSpan.FromMinutes((double)added_or_subtracted);
-			return timeSpan.Hours * 100 + timeSpan.Minutes;
-		}
-		public static int CorrectTime1(int timenow, int added_or_subtracted)
-		{
-			return int.Parse(DateTime.ParseExact(timenow.ToString("0000"), "HHmm", null).AddMinutes((double)added_or_subtracted).ToString("HHmm"));
-		}
-
-
-
-
-
-		//  =============== Datetime Extensions   ================//
-		// 
-		/*
-                static void Main(string[] args) {
-                    var mydate = "29021996";
-                    var date = mydate.ToDateTime(format: "ddMMyyyy"); // {29.02.1996 00:00:00}
-                    mydate = "2016 3";      		 date = mydate.ToDateTime("yyyy M"); // {01.03.2016 00:00:00}
-                    mydate = "2016 12";     		 date = mydate.ToDateTime("yyyy d"); // {12.01.2016 00:00:00}
-                    mydate = "2016/31/05 13:33";     date = mydate.ToDateTime("yyyy/d/M HH:mm"); // {31.05.2016 13:33:00}
-                    mydate = "2016/31 Ocak";         date = mydate.ToDateTime("yyyy/d MMMM"); // {31.01.2016 00:00:00}
-                    mydate = "2016/31 January";      date = mydate.ToDateTime("yyyy/d MMMM", cultureString: "en-US");     // {31.01.2016 00:00:00}
-                    mydate = "11/?????/1437";        date = mydate.ToDateTime( culture: CultureInfo.GetCultureInfo("ar-SA"),  format: "dd/MMMM/yyyy");   // Weird :) I supposed dd/yyyy/MMMM but that did not work !?$^&*
-                    System.Diagnostics.Debug.Assert(  date.Equals(new DateTime(year: 2016, month: 5, day: 18)));
-                }
-
-
-                        foreach (TimeZoneInfo timeZone in TimeZoneInfo.GetSystemTimeZones())	Print(  "'"+ timeZone.DisplayName + "' => '"+ timeZone.Id + "'" );
-        */
-		public static DateTime ToDateTime(string s)
-		{
-			try
-			{
-				return ToDateTime(s, "ddMMyyyy", "");
-			}
-			catch (Exception e)
-			{
-				m(e.Message);
-				return DateTime.MinValue;
-			}
-		}
-		public static DateTime ToDateTime(string s, string format)
-		{
-			try
-			{
-				return ToDateTime(s, format, "");
-			}
-			catch (Exception e)
-			{
-				m(e.Message);
-				return DateTime.MinValue;
-			}
-		}
-		public static DateTime ToDateTime(string s, string format, string cultureString)
-		{
-			try
-			{  //tr-TR
-				CultureInfo _culture = (cultureString == "") ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(cultureString);
-				return DateTime.ParseExact(s: s, format: format, provider: _culture);
-			}
-			catch (FormatException) { throw; }
-			catch (Exception) { throw; } // Given Culture is not supported culture
-		}
-
-
-		public static int DateToTime(DateTime dt) { return dt.Hour * 100 + dt.Minute; }
-
-
-		public static string DateToTimeString(DateTime dt)
-		{
-			return (dt.Hour < 10 ? "0" : "") + dt.Hour.ToString() + ":" + (dt.Minute < 10 ? "0" : "") + dt.Minute.ToString();
-		}
-
-		public static int HoursMinutes(DateTime time)
-		{
-			return time.Hour * 100 + time.Minute;
-		}
-
-		public static DateTime ToTimed_ToDate(DateTime cur_time, int timenow)
-		{
-			return DateTime.ParseExact(cur_time.ToString("yyyy-M-dd") + timenow.ToString(" 0000"), "yyyy-M-dd HHmm", null);
-		}
-
-
-		public static int GetWeekOfMonth(DateTime targetTime)
-		{
-			DateTime first = new DateTime(targetTime.Year, targetTime.Month, 1);
-			return GetWeekOfYear(targetTime) - GetWeekOfYear(first) + 1;
-		}
-
-		public static int GetWeekOfYear(DateTime targetTime)
-		{
-			return (new System.Globalization.GregorianCalendar()).GetWeekOfYear(targetTime, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday);
-		}
-
-		public static int GetQuarter(DateTime targetTime)
-		{
-			int result = 0;
-			int month = targetTime.Month;
-			if (month <= 3) result = 1;
-			else if (month > 3 && month <= 6) result = 2;
-			else if (month > 6 && month <= 9) result = 3;
-			else if (month > 9) result = 4;
-			return result;
-		}
+ 
 		#endregion
 
 
@@ -323,22 +190,6 @@ namespace PuvoxLibrary
 			else if (text == "below") return "above";
 
 			return "";
-		}
-
-		public static bool is_Between(DateTime target, DateTime start, DateTime end)
-		{
-			int target_ = Int32.Parse(target.ToString("HHmm"));
-			int start_ = Int32.Parse(start.ToString("HHmm"));
-			int end_ = Int32.Parse(end.ToString("HHmm"));
-			return target_ >= start_ && target_ < end_;
-		}
-
-		public static bool is_Between(DateTime target, int start, int end)
-		{
-			int target_ = Int32.Parse(target.ToString("HHmm"));
-			int start_ = start;
-			int end_ = end;
-			return target_ >= start_ && target_ < end_;
 		}
 
 		#endregion
@@ -551,17 +402,6 @@ namespace PuvoxLibrary
 			return false;
 		}
 
-
-		public static bool TimeGone(string Key, int minutes)
-		{
-			string registryValue = getRegistryValue("timegone_" + Key);
-			if (string.IsNullOrEmpty(registryValue) || DateTime.Now > DateTime.Parse(registryValue).AddMinutes((double)minutes))
-			{
-				setRegistryValue("timegone_" + Key, DateTime.Now.ToString());
-				return true;
-			}
-			return false;
-		}
 
 
 
@@ -1236,7 +1076,6 @@ namespace PuvoxLibrary
 	 // cmd.StandardInput.WriteLine("powershell (Invoke-WebRequest http://ipinfo.io/ip).Content >> %filepath%");
 	 */
 
-
 		//cachedCall(class, "MessageBox", new object[] { par1 }
 		public static string cachedCall(string MethodFullName, object[] parameters, int minutes)
 		{
@@ -1258,7 +1097,7 @@ namespace PuvoxLibrary
 				}
 				else
 				{
-					MethodInfo method = classType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+					MethodInfo method = classType.GetMethod(methodName, regularBindingFlags);
 					if (method == null)
 					{
 						m("You are trying to trigger non-existing method:" + methodName + "(" + className + ")");
@@ -1974,17 +1813,7 @@ namespace PuvoxLibrary
 			var seed = Convert.ToInt32(System.Text.RegularExpressions.Regex.Match(Guid.NewGuid().ToString(), @"\d+").Value);
 			return new Random(seed).Next(min, max);
 		}
-
-
-		public static string DateToSeconds(DateTime date)
-		{
-			return date.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
-		}
-		public static string DateString(DateTime date)
-		{
-			return date.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
-		}
-
+ 
 		public static string convertBackSlashes(string path)
 		{
 			return path.Replace("/", "\\");
@@ -2604,17 +2433,29 @@ namespace PuvoxLibrary
 				var act = (new Action<object, object>((sender, eventargs) => {
 					try
 					{
-						if (sender != null) printAct("SENDER:" + sender.GetType());
-						else printAct("NULL SENDER:");
+						var str = "SENDER : ";
+						if (sender != null) str += sender.GetType();
+						else str += "NULL";
+						str += " | EVENT: ";
 						if (eventargs != null)
 						{
-							printAct("EVT:" + eventargs.GetType());
+							str +=  eventargs.GetType() ;
 							if (eventargs is System.EventArgs)
 							{
 								System.EventArgs ee = eventargs as System.EventArgs;
+							} else if (eventargs is System.Windows.RoutedEventArgs)
+                            {
+								var ee = eventargs as System.Windows.RoutedEventArgs;
+								var sr = ee.Source;
+								str += sr ==null ? "" : " [" + sr.ToString() +"] ";
+								var sr2 = ee.RoutedEvent;
+								str += sr2 == null ? "" : " [" + sr2.Name + "] ";
+								var sr3 = ee.OriginalSource;
+								str += sr3 == null ? "" : " [" + sr3.ToString() + "] ";
 							}
 						}
-						else printAct("NULL EVT:");
+						else str += "NULL";
+						printAct(str);
 					}
 					catch (Exception ex)
 					{
@@ -3239,120 +3080,173 @@ namespace PuvoxLibrary
 			timer.Start();
 			return timer;
 		}
-		// Standalone:
-		// System.Threading.Tasks.Task.Delay(3000).ContinueWith(t => init());
-		//                     or  
-		// ExecuteAfter(() => MessageBox.Show("hi"), 1000 ); 
-		// SetTimeout(1000,   () => { MessageBox.Show("hi");  }   );
-		#endregion
+        // Standalone:
+        // System.Threading.Tasks.Task.Delay(3000).ContinueWith(t => init());
+        //                     or  
+        // ExecuteAfter(() => MessageBox.Show("hi"), 1000 ); 
+        // SetTimeout(1000,   () => { MessageBox.Show("hi");  }   );
+        #endregion
 
 
 
 
 
-
-		public class DateUtils
-		{
-			public static DateTime ParseGMTString(string gmtStr)
+        #region DATATIME
+        public class DateUtils
+		{ 
+			//  0940 type time-ints
+			public static bool isBetweenHMS(DateTime target, int start, int end, bool equality)
 			{
-				return DateTime.ParseExact(gmtStr, "yyyy-MM-dd HH:mm:ss Z", CultureInfo.InvariantCulture);
+				int target_ = Int32.Parse(target.ToString("HHmm"));
+				return (equality ? target_ >= start && target_ <= end : target_ > start && target_ < end);
 			}
 
-			public static DateTime ParseDatePartFromGMTString(string gmtStr)
+			public static bool isBetweenHMS(DateTime target, DateTime start, DateTime end, bool equality)
 			{
-				return DateTime.ParseExact(gmtStr.Substring(0, 10), "yyyy-MM-dd", CultureInfo.InvariantCulture);
+				int num_middle = int.Parse(target.ToString("HHmm"));
+				int num2 = int.Parse(start.ToString("HHmm"));
+				int num3 = int.Parse(end.ToString("HHmm"));
+				return (equality ? num_middle >= num2 && num_middle <= num3 : num_middle > num2 && num_middle < num3);
 			}
 
-			public static bool IsMidnightOfToday(DateTime time)
+			public static bool IsTodayStart(DateTime time)
 			{
 				DateTime now = DateTime.Now;
 				return time.Year == now.Year && time.Month == now.Month && time.Day == now.Day && time.Hour == 0 && time.Minute == 0 && time.Second == 0;
 			}
 
-			public static DateTime ConvertToUtc(DateTime time, bool unspecificAsLocal)
+			public static int GetWeekOfMonth(DateTime targetTime)
 			{
-				if (time.Kind == DateTimeKind.Utc)
-				{
-					return time;
+				DateTime first = new DateTime(targetTime.Year, targetTime.Month, 1);
+				return GetWeekOfYear(targetTime) - GetWeekOfYear(first) + 1;
+			}
+			public static int GetWeekOfYear(DateTime targetTime)
+			{
+				return (new System.Globalization.GregorianCalendar()).GetWeekOfYear(targetTime, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+			}
+			public static int GetQuarter(DateTime targetTime)
+			{
+				int result = 0;
+				int month = targetTime.Month;
+				if (month <= 3) result = 1;
+				else if (month > 3 && month <= 6) result = 2;
+				else if (month > 6 && month <= 9) result = 3;
+				else if (month > 9) result = 4;
+				return result;
+			}
+
+			public static string NumberToHMSstring(int hhmmss)
+			{
+				// timenow is i.e. 061055
+				string t = hhmmss.ToString();
+				string str = t.Length <= 1 ? "00000" + t : (t.Length <= 2 ? "0000" + t : (t.Length <= 3 ? "000" + t : (t.Length <= 4 ? "00" + t : (t.Length <= 5 ? "0" + t : t))));
+				return str;
+			}
+			public static string DatetimeToHMSstring(DateTime dt)
+			{
+				return (dt.Hour < 10 ? "0" : "") + dt.Hour.ToString() + ":" + (dt.Minute < 10 ? "0" : "") + dt.Minute.ToString();
+			}
+
+			public static TimeSpan HMSToTimeSpan(int hhmmss)
+			{
+				DateTime dt;
+				DateTime.TryParseExact(NumberToHMSstring(hhmmss), "HHmmss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out dt);
+				return dt.TimeOfDay;
+			}
+
+			public static int addNumberToHMS(int hhmmss, int added_or_subtracted)
+			{
+				TimeSpan timeSpan = new TimeSpan(hhmmss / 100, hhmmss % 100, 0) + TimeSpan.FromMinutes((double)added_or_subtracted);
+				return timeSpan.Hours * 100 + timeSpan.Minutes;
+				// return int.Parse(DateTime.ParseExact(timenow.ToString("0000"), "HHmm", null).AddMinutes((double)added_or_subtracted).ToString("HHmm"));
+			}
+
+			public static string DatetimeToString(DateTime dt)
+			{
+				return dt.ToString("yyyy-MM-dd HH:mm:ss");
+			}
+			public static string DatetimeToStringWithTZ(DateTime dt)
+			{
+				return dt.ToString("yyyy-MM-ddTHH:mm:ssZ");  // adding ' Z' in the end will results in UTC meaning
+			}
+
+			public static DateTime StringToDatetime(string s, string format)
+			{
+				return StringToDatetime(s, format, ""); //format i.e: "ddMMyyyy"
+			}
+			public static DateTime StringToDatetime(string s, string format, string cultureString)
+			{
+				try
+				{  //tr-TR
+					CultureInfo _culture = (cultureString == "") ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(cultureString); //"en", "fr"
+					return DateTime.ParseExact(s: s, format: format, provider: _culture);
 				}
-				if (time.Kind == DateTimeKind.Unspecified)
-				{
-					return new DateTime(time.Ticks, unspecificAsLocal ? DateTimeKind.Local : DateTimeKind.Utc).ToUniversalTime();
-				}
-				if (time.Kind == DateTimeKind.Local)
-				{
-					return time.ToUniversalTime();
-				}
-				throw new Exception(string.Format("Unsupported DateTime.Kind {0}", time.Kind));
+				catch (FormatException) { throw; }
+				catch (Exception) { throw; } // Given Culture is not supported culture
+			}
+			public static DateTime UtcStringToDatetime(string gmtStr)
+			{
+				return DateTime.ParseExact(gmtStr, "yyyy-MM-dd HH:mm:ss Z", CultureInfo.InvariantCulture);
 			}
 
-			public static long ConvertToTimestamp(DateTime time, bool unspecificAsLocal)
-			{
-				return (long)DateUtils.ConvertToUtc(time, unspecificAsLocal).Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+
+			public static DateTime UtcDatetime(DateTime? dt) {
+				return (dt ?? DateTime.Now).ToUniversalTime();
+				//return (new DateTime(dt.Ticks, DateTimeKind.Local)).ToUniversalTime();
 			}
 
-	
-			public static long ConvertToTimestampMili(DateTime time, bool unspecificAsLocal)
+			public static long UtcTimestamp(DateTime? dt){
+				return (dt.HasValue ? dt.Value.ToUniversalTime() : DateTimeOffset.UtcNow).ToUnixTimeMilliseconds();
+			}
+			public static DateTime UtcTimestampToUtcDatetime(long timestampMS)
 			{
-				return (long)DateUtils.ConvertToUtc(time, unspecificAsLocal).Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+				// epoch
+				return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds((double)timestampMS);
 			}
 
-			public static DateTime TimestampToUtcDateTime(long timestamp)
-			{
-				return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)timestamp);
-			}
-			
-			public static string ConvertTo24HrString(DateTime time)
-			{
-				return time.ToString("yyyy-MM-dd HH:mm:ss"); // adding ' Z' in the end will results in UTC
-			}
-			public static DateTime DateToUTC2(DateTime dt) { return (new DateTime(dt.Ticks, DateTimeKind.Local)).ToUniversalTime(); }
-			public static DateTime DateToUTC(DateTime dt) { return dt.ToUniversalTime(); }
-			public static string DateToString(DateTime dt) { return dt.ToString("yyyy-MM-ddTHH:mm:ssZ"); }
-			
-			public static DateTime TimestampMiliToUtcDateTime(long timestampMili)
-			{
-				return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds((double)timestampMili);
-			}
 
-			public static DateTime TimestampToUtcDateTimeUnspecified(long timestamp)
-			{
-				return new DateTime(DateUtils.TimestampToUtcDateTime(timestamp).Ticks, DateTimeKind.Unspecified);
-			}
+			//  return date.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+			//	date = "29021996".ToDateTime(format: "ddMMyyyy"); // {29.02.1996 00:00:00}
+			//	date = "2016 3".ToDateTime("yyyy M"); // {01.03.2016 00:00:00}
+			//	date = "2016 12".ToDateTime("yyyy d"); // {12.01.2016 00:00:00}
+			//	date = "2016/31/05 13:33".ToDateTime("yyyy/d/M HH:mm"); // {31.05.2016 13:33:00}
+			//	date = "2016/31 Ocak".ToDateTime("yyyy/d MMMM"); // {31.01.2016 00:00:00}
+			//	date = "2016/31 January".ToDateTime("yyyy/d MMMM", cultureString: "en-US");     // {31.01.2016 00:00:00}
+			//	date = "11/?????/1437".ToDateTime( culture: CultureInfo.GetCultureInfo("ar-SA"),  format: "dd/MMMM/yyyy");   // Weird :) I supposed dd/yyyy/MMMM but that did not work !?$^&*
+			//	System.Diagnostics.Debug.Assert(  date.Equals(new DateTime(year: 2016, month: 5, day: 18)));
+			//foreach (var timeZone in TimeZoneInfo.GetSystemTimeZones())	Print(  "'"+ timeZone.DisplayName + "' => '"+ timeZone.Id + "'" );
 
-			public static DateTime TimestampMiliToUtcDateTimeUnspecified(long timestampMili)
-			{
-				return new DateTime(DateUtils.TimestampMiliToUtcDateTime(timestampMili).Ticks, DateTimeKind.Unspecified);
-			}
+			// idk this function
+			// public static DateTime ToTimed_ToDate(DateTime cur_time, int timenow)
+			// {
+			//	return DateTime.ParseExact(cur_time.ToString("yyyy-M-dd") + timenow.ToString(" 0000"), "yyyy-M-dd HHmm", null);
+			// }
 
-			public static DateTime TimestampToLocalDateTime(long timestamp)
-			{
-				return DateUtils.TimestampToUtcDateTime(timestamp).ToLocalTime();
-			}
 
-			public static DateTime TimestampMiliToLocalDateTime(long timestampMili)
-			{
-				return DateUtils.TimestampMiliToUtcDateTime(timestampMili).ToLocalTime();
-			}
+			// public static DateTime ConvertToUtc(DateTime time, bool unspecificAsLocal)
+			// {
+			//	if (time.Kind == DateTimeKind.Utc) return time; 
+			//	if (time.Kind == DateTimeKind.Unspecified) return new DateTime(time.Ticks, unspecificAsLocal ? DateTimeKind.Local : DateTimeKind.Utc).ToUniversalTime();
+			//	if (time.Kind == DateTimeKind.Local) return time.ToUniversalTime(); 
+			//	throw new Exception(string.Format("Unsupported DateTime.Kind {0}", time.Kind));
+			// }
 
-			public static DateTime TimestampToLocalDateTimeUnspecified(long timestamp)
-			{
-				return new DateTime(DateUtils.TimestampToLocalDateTime(timestamp).Ticks, DateTimeKind.Unspecified);
-			}
+			// idk what this function does
+			//public static long ConvertToTimestamp(DateTime time, bool unspecificAsLocal)
+			//{
+			//	return (long)DateUtils.ConvertToUtc(time, unspecificAsLocal).Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+			//}
 
-			public static DateTime TimestampMiliToLocalDateTimeUnspecified(long timestampMili)
-			{
-				return new DateTime(DateUtils.TimestampMiliToLocalDateTime(timestampMili).Ticks, DateTimeKind.Unspecified);
-			}
-
-			public static long epochMS(){
-				return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-				// TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
-				// int secondsSinceEpoch = (int)t.TotalSeconds;
-				// return (UInt64)secondsSinceEpoch * 1000;
-			}
+			//utc Timestamp
+			// TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
+			// int secondsSinceEpoch = (int)t.TotalSeconds;
+			// return (UInt64)secondsSinceEpoch * 1000;
+			//var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+			//return Convert.ToInt64((dt - epoch).TotalSeconds);
+			//return Convert.ToInt64((dt.ToUniversalTime() - epoch).TotalSeconds);
+			//return (dt.ToUniversalTime().Ticks - 621355968000000000) / 10000000;
 		}
-
+		#endregion DATETIMES
 
 
 
@@ -4095,15 +3989,11 @@ namespace PuvoxLibrary
 		}
 		*/
 		// ===========================
-
+		public static BindingFlags regularBindingFlags = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public;
 		public static object callMethod(object o, string methodName, params object[] args)
 		{
-			MethodInfo method = o.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
-			if (method != null)
-			{
-				return method.Invoke(o, args);
-			}
-			return null;
+			MethodInfo method = o.GetType().GetMethod(methodName, regularBindingFlags);
+			return method.Invoke(o, args);
 		}
 
 
@@ -4129,6 +4019,7 @@ namespace PuvoxLibrary
 		}
 
 
+		// useless, only gets public
 		public static object propertyGet2(object obj_, string propName)
 		{
 			PropertyInfo property = obj_.GetType().GetProperty(propName);
@@ -4586,6 +4477,7 @@ namespace PuvoxLibrary
 			else if (IsSimpleType(obj))
 			{
 				result += obj.ToString();
+				print_("SIMPLE:"+ result);
 			}
 			else try
 			{
@@ -5432,7 +5324,7 @@ namespace PuvoxLibrary
 					var uniqString = containerKey;
 					var textareaName = uniqString + "_textarea";
 
-					var newTxt = Environment.NewLine + Environment.NewLine + "•" + DatetimeText() + " ::: "+ message;
+					var newTxt = Environment.NewLine + Environment.NewLine + "•" + DateUtils.DatetimeToString(DateTime.Now) + " ::: "+ message;
 
 					if (!allPopupTexts.ContainsKey(uniqString)) allPopupTexts[uniqString] = "";
 					allPopupTexts[uniqString] =   allPopupTexts[uniqString] + newTxt;
@@ -5612,14 +5504,9 @@ namespace PuvoxLibrary
 			}
 		}
 
-		public static string DatetimeText()
-        {
-			return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-		}
 		public static void logError(object obj_)
 		{
-			FileOperations.Write(errorLogFile, DatetimeText() + Environment.NewLine + obj_.ToString() + Environment.NewLine);
+			FileOperations.Write(errorLogFile, DateUtils.DatetimeToString(DateTime.Now) + Environment.NewLine + obj_.ToString() + Environment.NewLine);
 		}
 
 		private static string isDeveloperMode_contents = "-1";
