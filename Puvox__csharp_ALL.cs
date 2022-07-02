@@ -130,9 +130,9 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
- 
 
-		public static bool TimeGone(string Key, int minutes)
+
+		/*public static bool TimeGone(string Key, int minutes)
 		{
 			string registryValue = getRegistryValue("timegone_" + Key);
 			if (string.IsNullOrEmpty(registryValue) || DateTime.Now > DateTime.Parse(registryValue).AddMinutes((double)minutes))
@@ -142,9 +142,21 @@ namespace PuvoxLibrary
 			}
 			return false;
 		}
+		
+		public static bool FirstTimeAction(string regKey)
+		{
+			if (getRegistryValue("triggered_" + regKey) != "y")
+			{
+				setRegistryValue("triggered_" + regKey, "y");
+				return true;
+			}
+			return false;
+		}
+		 
+		 */
 
 		#endregion
- 
+
 		#endregion
 
 
@@ -340,19 +352,6 @@ namespace PuvoxLibrary
 			}
 			return dictionary;
 		}
-
-
-
-		public static bool FirstTimeAction(string regKey)
-		{
-			if (getRegistryValue("triggered_" + regKey) != "y")
-			{
-				setRegistryValue("triggered_" + regKey, "y");
-				return true;
-			}
-			return false;
-		}
-
 
 
 
@@ -1027,6 +1026,17 @@ namespace PuvoxLibrary
 	 // cmd.StandardInput.WriteLine("powershell (Invoke-WebRequest http://ipinfo.io/ip).Content >> %filepath%");
 	 */
 
+		public static bool isCacheSet(string path, string key, int minutes)
+		{
+			string registryValue = getRegistryValue(path, key, "");
+			if (string.IsNullOrEmpty(registryValue) || DateTime.Now > DateTime.Parse(registryValue).AddMinutes((double)minutes))
+			{
+				setRegistryValue(path, key, DateTime.Now.ToString());
+				return false;
+			}
+			return true;
+		}
+
 		//cachedCall(class, "MessageBox", new object[] { par1 }
 		public static string cachedCall(string MethodFullName, object[] parameters, int minutes)
 		{
@@ -1039,12 +1049,13 @@ namespace PuvoxLibrary
 				string methodName = idx < 0 ? MethodFullName : MethodFullName.Replace(className + ".", "");
 
 				string fullPathName = className + "." + methodName;
-				string key = @"Software\Puvox\cachedCalls\aa" + fullPathName + md5(PuvoxLibrary.Methods.tryEnumerabledString(parameters, "")) + minutes.ToString();
+				string path = @"Software\Puvox\cachedCalls\";
+				string key = @"aa" + fullPathName + md5(PuvoxLibrary.Methods.tryEnumerabledString(parameters, "")) + minutes.ToString();
 				string cacheKey = key + "_cache";
 
-				if (isCacheSet(cacheKey, minutes))
+				if (isCacheSet(path, cacheKey, minutes))
 				{
-					result = getRegistryValue(key, "nothin");
+					result = getRegistryValue(path, key, "nothin");
 				}
 				else
 				{
@@ -1055,7 +1066,7 @@ namespace PuvoxLibrary
 						return "";
 					}
 					result = (string)method.Invoke(null, parameters);
-					setRegistryValue(key, result);
+					setRegistryValue(path, key, result);
 				}
 			}
 			catch (Exception e)
@@ -1266,10 +1277,6 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		public static bool setRegistryValue(string patKey, string value)
-		{
-			return setRegistryValue(regPartFromKey(patKey, true), regPartFromKey(patKey, false), value);
-		}
 		public static bool setRegistryValue(string path, string key, string value)
 		{
 			return setRegistryValue(getRegistryHiveKey(chosenRegHive), path, key, value);
@@ -1461,16 +1468,6 @@ namespace PuvoxLibrary
 		}
 
 
-		public static bool isCacheSet(string PathKey, int minutes)
-		{
-			string registryValue = getRegistryValue(PathKey, "");
-			if (string.IsNullOrEmpty(registryValue) || DateTime.Now > DateTime.Parse(registryValue).AddMinutes((double)minutes))
-			{
-				setRegistryValue(PathKey, DateTime.Now.ToString());
-				return false;
-			}
-			return true;
-		}
 		#endregion
 
 
@@ -2131,7 +2128,7 @@ namespace PuvoxLibrary
 
 		public static string getFormOption(string key, string two, string regKeyBase)
 		{
-			return getRegistryValue(regKeyBase + optionsPrefix + key, two);
+			return getRegistryValue(regKeyBase, optionsPrefix + key, two);
 		}
 		private void button_opts_save_Click(Form form)
 		{
@@ -2724,7 +2721,7 @@ namespace PuvoxLibrary
 						string targetName = control.Name;
 						if (targetName.StartsWith("option_"))
 						{
-							string regValue = getRegistryValue(regKeyBase + optionsPrefix + control.Name, control.Text).ToLower();
+							string regValue = getRegistryValue(regKeyBase,optionsPrefix + control.Name, control.Text).ToLower();
 							controlValueSet(control, regValue);
 						}
 					}
@@ -2801,7 +2798,7 @@ namespace PuvoxLibrary
 				if (control != null && isUserInput(control))
 				{
 					string defaultVal = control.Text;
-					string regValue = getRegistryValue(regKeyBase + optionsPrefix + control.Name, defaultVal).ToLower();
+					string regValue = getRegistryValue(regKeyBase, optionsPrefix + control.Name, defaultVal).ToLower();
 					//checkbox checking need to be obtained as string
 					if (control is System.Windows.Forms.CheckBox)
 					{
@@ -2809,7 +2806,7 @@ namespace PuvoxLibrary
 					}
 					else
 					{
-						control.Text = getRegistryValue(regKeyBase + optionsPrefix + control.Name, regValue);
+						control.Text = getRegistryValue(regKeyBase, optionsPrefix + control.Name, regValue);
 
 					}
 				}
@@ -3689,8 +3686,8 @@ namespace PuvoxLibrary
 			{
 				string keyNm_this = "trans_" + v.Value + "_" + lang_2char;    // keyname for that element
 				string keyNm_ENG = "trans_" + v.Value + "_en";                // keyname for that element
-				string val_this = getRegistryValue(keyNm_this, "");              // value from registry for element 
-				string val_ENG = getRegistryValue(keyNm_ENG, "");              // value from registry for element 
+				string val_this = getRegistryValue(translationsBaseReg, keyNm_this, "");              // value from registry for element 
+				string val_ENG = getRegistryValue(translationsBaseReg, keyNm_ENG, "");              // value from registry for element 
 				if (
 					(String.IsNullOrEmpty(val_this))                            //if empty 
 					||
@@ -3747,14 +3744,14 @@ namespace PuvoxLibrary
 			}
 			else
 			{
-				string key = translationsBaseReg + "t_" + md5(englishText) + "_" + targetLang;
+				string key =  "t_" + md5(englishText) + "_" + targetLang;
 				if (targetLang != "en")
 				{
-					string registryValue = getRegistryValue(key, "");
+					string registryValue = getRegistryValue(translationsBaseReg, key, "");
 					if (string.IsNullOrEmpty(registryValue))
 					{
 						result = gTranslate(englishText, targetLang);
-						setRegistryValue(key, result);
+						setRegistryValue(translationsBaseReg, key, result);
 					}
 					else
 					{
@@ -6184,17 +6181,17 @@ namespace PuvoxLibrary
 		}
 		public string getRegistryValue(string keyName, string defaultValue)
 		{
-			return PuvoxLibrary.Methods.getRegistryValue(RegRootOfThisProg + keyName, defaultValue);
+			return PuvoxLibrary.Methods.getRegistryValue(RegRootOfThisProg, keyName, defaultValue);
 		}
 		public bool setRegistryValue(string keyName, string value)
 		{
-			PuvoxLibrary.Methods.setRegistryValue(RegRootOfThisProg + keyName, value);
+			PuvoxLibrary.Methods.setRegistryValue(RegRootOfThisProg, keyName, value);
 			return true;
 		}
 
 		public bool isCacheSet(string key, int minutes)
 		{
-			return PuvoxLibrary.Methods.isCacheSet(@"Software\Puvox\" + Slug + @"\cachedTimegones\" + key, minutes);
+			return PuvoxLibrary.Methods.isCacheSet(@"Software\Puvox\" + Slug + @"\cachedTimegones\", key, minutes);
 		}
 
 		public bool fillFormOptions(System.Windows.Forms.Control.ControlCollection coll)
