@@ -342,55 +342,6 @@ namespace PuvoxLibrary
 		}
 
 
-		public static string regPartFromKey(string key, int partN)
-		{
-			if (partN == 1)
-			{
-				if (charsInPhrase(key, "\\") != 0)
-				{
-					return withoutLastDir(key, 1);
-				}
-				return key;
-			}
-			else
-			{
-				if (partN != 2)
-				{
-					return "";
-				}
-				if (charsInPhrase(key, "\\") != 0)
-				{
-					return lastPart(key);
-				}
-				return key;
-			}
-		}
-
-
-		public static bool existsRegistryValue(string path, string key)
-		{
-			return getRegistryValue(path + key) != null;
-		}
-
-
-		public static string getRegistryValue(string key)
-		{
-			return getRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2));
-		}
-
-
-		public static string getRegistryValue(string key, string defaultVal, bool nothing)
-		{
-			string registryValue = getRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2));
-			if (string.IsNullOrEmpty(registryValue))
-			{
-				setRegistryValue(key, defaultVal);
-				return defaultVal;
-			}
-			return registryValue;
-		}
-
-
 
 		public static bool FirstTimeAction(string regKey)
 		{
@@ -1126,34 +1077,40 @@ namespace PuvoxLibrary
 
 
 
-
 		#region Registry
-		private static string RegBaseKey_ = "";
-		public static string RegBaseKey
-		{
-			get
-			{
-				if (RegBaseKey_ == "")
-				{
-					RegBaseKey_ = "SOFTWARE\\ExampleCompany\\" + ProgramName + "\\";
-					//m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); } 
-				}
-				return RegBaseKey_;
-			}
-			set { RegBaseKey_ = value; }
-		}
 
 		public static RegistryHive chosenRegHive = RegistryHive.CurrentUser;    //NT 8 Cannot implicitly convert type 'Microsoft.Win32.RegistryKey' to 'Microsoft.Win32.RegistryHive'	
-
 		public static RegistryKey chosenRegKey = Registry.CurrentUser;
-
-		// subkey like :  subKey = "SOFTWARE\\MyCompany\\programmmm;
-
+		public static string ProgramName { get; set; }
+		public static string RegBaseKey_ = "";
+		public static string getRegistryPathForKey(string currentAppSlug, string companySlug)
+		{
+			var companySlugFinal = string.IsNullOrEmpty(companySlug) ? "AppSettingsStorage_puvox" : companySlug;
+			return "SOFTWARE\\" + companySlugFinal + "\\" + currentAppSlug + "\\";
+		}
+		public static string RegBaseKey()
+		{
+			if (RegBaseKey_ == "")
+			{
+				if (string.IsNullOrEmpty(ProgramName))
+                {
+					throw new Exception("Please set .ProgramName property to i.e. 'MyCompany/MyAppName', otherwise Library methods can't function normally.");
+				}
+				string[] paths = ProgramName.Split('/');
+				if (paths.Length < 2)
+                {
+					throw new Exception(" .ProgramName property needs to be a namespace like string i.e. 'MyCompany/MyAppName'");
+				}
+				RegBaseKey_ = getRegistryPathForKey(paths[1], paths[0]);
+			}
+			return RegBaseKey_;
+		}
 		public static RegistryKey getRegistryHiveKey(RegistryHive rh)
 		{
 			//3.5
 			//return rh; //RegistryKey.OpenSubKey(rh ) ;
-			return RegistryKey.OpenBaseKey(rh, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32);
+			var result = RegistryKey.OpenBaseKey(rh, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32);
+			return result; // result.Close();
 		}
 
 		//64 bit detection  https://pastebin.com/raw/yw4gSLK0   |  https://pastebin.com/raw/UdhUteE3   |   https://pastebin.com/raw/9fXbwu9C
@@ -1189,11 +1146,6 @@ namespace PuvoxLibrary
 		//string setOptionValue(string keyName, string defaultValue) { return PuvoxLibrary.Methods.getRegistryValue(currentProgSlug + keyName, defaultValue); }
 
 		public static Dictionary<string, string> myregs = new Dictionary<string, string>();
-		public static string getRegistryPathForKey(string currentAppSlug, string companySlug)
-        {
-			companySlug = companySlug == "" ? "AppSettingsStorage_puvox" : companySlug;
-			return "SOFTWARE\\" + companySlug + "\\" + currentAppSlug + "\\";
-		}
 		public static string regPartFromKey(string key, bool Dir_or_Key)
 		{
 			if (Dir_or_Key)
@@ -1214,82 +1166,96 @@ namespace PuvoxLibrary
 			}
 		}
 
-		public static bool existsRegistryValue(string pathKey)
+		//public static bool existsRegistryValue(string pathKey)
+		//{
+		//	return existsRegistryValue(getRegistryHiveKey(chosenRegHive), pathKey);
+		//}
+		public static bool existsRegistryValue(string path, string key)
 		{
-			string path = regPartFromKey(pathKey, true);
-			string key = regPartFromKey(pathKey, false);
-			RegistryKey registryHiveKey = getRegistryHiveKey(chosenRegHive);
+			return existsRegistryValue(getRegistryHiveKey(chosenRegHive), path, key);
+			//string path = regPartFromKey(pathKey, true);
+			//string key = regPartFromKey(pathKey, false);
+		}
+		public static bool existsRegistryValue(RegistryKey registryHiveKey, string path, string key)
+		{
 			if (registryHiveKey == null)
 			{
 				return false;
 			}
 			else
 			{
+				bool result = false;
 				RegistryKey registryKey = registryHiveKey.OpenSubKey(path);
 				// if path empty
-				if (registryKey == null)
-				{
-					registryHiveKey.Close();
-					return false;
-				}
-				else
+				if (registryKey != null)
 				{
 					object value = registryKey.GetValue(key);
+					result = value != null;
 					registryKey.Close();
-					registryHiveKey.Close();
-					return value != null;
 				}
+				registryKey.Close();
+				return result;
 			}
 		}
 
-		public static string getRegistryValue(string patKey, string defaultValue)
-		{
-			return getRegistryValue(regPartFromKey(patKey, true), regPartFromKey(patKey, false), defaultValue);
-		}
+		//public static string getRegistryValue(string patKey, string defaultValue)
+		//{
+		//	return getRegistryValue(regPartFromKey(patKey, true), regPartFromKey(patKey, false), defaultValue);
+		//}
 
-		// // ----- 62 vs 32 :  https://apttech.wordpress.com/2012/01/06/difference-between-a-registry-hive-and-registry-key-2/
-		public static string getRegistryValue(string path, string key, object defaultValue)
+		//public static string getRegistryValue(string key)
+		//{
+		//	return getRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2));
+		//}
+		public static string getRegistryValue(string key, string defaultValue, bool createIfNotExists = false)
 		{
+			return getRegistryValue(RegBaseKey(), key, defaultValue, createIfNotExists);
+		}
+		//  ----- 62 vs 32 :  https://apttech.wordpress.com/2012/01/06/difference-between-a-registry-hive-and-registry-key-2/
+		public static string getRegistryValue(string path, string key, object defaultValue, bool createIfNotExists = false)
+		{
+			return getRegistryValue(getRegistryHiveKey(chosenRegHive), path, key, defaultValue, createIfNotExists);
+		}
+		public static string getRegistryValue(RegistryKey registryHiveKey, string path, string key, object defaultValue, bool createIfNotExists = false)
+		{
+			string result = null;
 			try
 			{
 				//if cached
 				if (myregs.ContainsKey(path + key))
 				{
-					return myregs[path + key];
+					result = myregs[path + key];
 				}
 				else
 				{
-					RegistryKey registryHiveKey = getRegistryHiveKey(chosenRegHive);
-					if (registryHiveKey == null)
+					string foundValue = null;
+					if (registryHiveKey != null)
 					{
-						return defaultValue == null ? null : defaultValue.ToString();
-					}
-					else
-					{
-						if (path == "")
-							path = RegBaseKey;
 						RegistryKey registryKey = registryHiveKey.OpenSubKey(path);
+						registryHiveKey.Close();
 						// if path empty
-						if (registryKey == null)
-						{
-							return defaultValue == null ? null : defaultValue.ToString();
-							registryHiveKey.Close();
-						}
-						else
+						if (registryKey != null)
 						{
 							object value = registryKey.GetValue(key);
 							registryKey.Close();
-							registryHiveKey.Close();
-							if (value == null)
-							{
-								return defaultValue == null ? null : defaultValue.ToString();
-							}
-							else
+							if (value != null)
 							{
 								myregs[path + key] = value.ToString();
-								return myregs[path + key];
+								foundValue = myregs[path + key];
 							}
 						}
+					}
+					if (string.IsNullOrEmpty(foundValue))
+					{
+						result = defaultValue == null ? null : defaultValue.ToString();
+						if (createIfNotExists)
+                        {
+							setRegistryValue(registryHiveKey, path, key, result);
+                        }
+					} 
+					else
+					{
+						result = foundValue;
 					}
 				}
 			}
@@ -1297,26 +1263,24 @@ namespace PuvoxLibrary
 			{
 				m(e);
 			}
-			return null;
+			return result;
 		}
 
-
-		public static void setRegistryValue(string patKey, string value)
+		public static bool setRegistryValue(string patKey, string value)
 		{
-			setRegistryValue(regPartFromKey(patKey, true), regPartFromKey(patKey, false), value);
+			return setRegistryValue(regPartFromKey(patKey, true), regPartFromKey(patKey, false), value);
 		}
-
-
 		public static bool setRegistryValue(string path, string key, string value)
+		{
+			return setRegistryValue(getRegistryHiveKey(chosenRegHive), path, key, value);
+		}
+		public static bool setRegistryValue(RegistryKey registryHiveKey, string path, string key, string value)
 		{
 			bool result;
 			try
 			{
-				RegistryKey registryHiveKey = getRegistryHiveKey(chosenRegHive);
 				if (registryHiveKey != null)
 				{
-					if (path == "")
-						path = RegBaseKey;
 					RegistryKey registryKey = registryHiveKey.OpenSubKey(path, true);
 					if (registryKey == null)
 					{
@@ -1324,51 +1288,25 @@ namespace PuvoxLibrary
 					}
 					myregs[path + key] = value;
 					registryKey.SetValue(key, value);
+					registryHiveKey.Close();
+					registryKey.Close();
 					result = true;
 				}
 				else
 				{
-					m("| regHive is null");
+					m("setRegistryValue failed: regHive is null. cant set registry value:" + key);
 					result = false;
-				}
-			}
-			catch (Exception)
-			{
-				result = false;
-			}
-			return result;
-		}
-
-
-		public static string getSetRegistryValue(string key, string value)
-		{
-			return getSetRegistryValue(regPartFromKey(key, true), regPartFromKey(key, false), value);
-		}
-
-
-		public static string getSetRegistryValue(string path, string key, string value)
-		{
-			string result;
-			try
-			{
-				string registryValue = getRegistryValue(path, key);
-				if (string.IsNullOrEmpty(registryValue))
-				{
-					setRegistryValue(path, key, value);
-					result = value;
-				}
-				else
-				{
-					result = registryValue;
 				}
 			}
 			catch (Exception ex)
 			{
-				m(ex.Message + " | getSetRegistryValue " + path + " ->" + key);
-				result = null;
+				result = false;
+				m("setRegistryValue failed. ex:" + ex.Message);
 			}
 			return result;
 		}
+
+
 
 
 
@@ -1534,7 +1472,6 @@ namespace PuvoxLibrary
 			return true;
 		}
 		#endregion
-
 
 
 
@@ -3109,6 +3046,11 @@ namespace PuvoxLibrary
 				return (equality ? num_middle >= num2 && num_middle <= num3 : num_middle > num2 && num_middle < num3);
 			}
 
+			public static bool equalDays(DateTime d1, DateTime d2)
+            {
+				return d2.Year == d2.Year && d2.Month == d2.Month && d2.Day == d2.Day;
+			}
+
 			public static bool IsTodayStart(DateTime time)
 			{
 				DateTime now = DateTime.Now;
@@ -3165,9 +3107,17 @@ namespace PuvoxLibrary
 			{
 				return dt.ToString("yyyy-MM-dd HH:mm:ss");
 			}
+			public static string DatetimeToStringMS(DateTime dt)
+			{
+				return dt.ToString("yyyy-MM-dd HH:mm:ss.fff");
+			}
 			public static string DatetimeToStringWithTZ(DateTime dt)
 			{
 				return dt.ToString("yyyy-MM-ddTHH:mm:ssZ");  // adding ' Z' in the end will results in UTC meaning
+			}
+			public static string DatetimeToStringMSWithTZ(DateTime dt)
+			{
+				return dt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");  // adding ' Z' in the end will results in UTC meaning
 			}
 
 			public static DateTime StringToDatetime(string s, string format)
@@ -3995,6 +3945,11 @@ namespace PuvoxLibrary
 			MethodInfo method = o.GetType().GetMethod(methodName, regularBindingFlags);
 			return method.Invoke(o, args);
 		}
+		public static object callMethodStatic(Type t, string methodName, params object[] args)
+		{
+			MethodInfo method = t.GetMethod(methodName, regularBindingFlags);
+			return method.Invoke(t, args);
+		}
 
 
 		public static MemberInfo[] GetMembersInclPrivateBase_static(Type t, BindingFlags flags)
@@ -4635,20 +4590,6 @@ namespace PuvoxLibrary
 		}
 
 
-		private static string ProgramName_ = "";
-		public static string ProgramName
-		{
-			get
-			{
-				if (ProgramName_ == "")
-				{
-					ProgramName_ = assemblyTitle() + "--" + assemblyGuid();
-					//m("Please set .ProgramName property ( ), otherwise Library methods can't function normally."); } 
-				}
-				return ProgramName_;
-			}
-			set { ProgramName_ = value; }
-		}
 		public static string assemblyName()
 		{
 			return System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
@@ -5270,27 +5211,38 @@ namespace PuvoxLibrary
 		private static bool CatchAllExceptions_FileOrWindow = true;
 
 		//[STAThread]
-		public static void CatchAllExceptions()
-		{
-			CatchAllExceptions(true, false);
-		}
-		public static void CatchAllExceptions(bool firstChaneException)
-		{
-			CatchAllExceptions(firstChaneException, false);
-		}
-		public static void CatchAllExceptions(bool firstChaneException, bool FileOrWindow)
+		public static void CatchAllExceptions_ON(bool firstChaneExceptionsToo, bool FileOrWindow, Action<string> act = null)
 		{
 			if (CatchAllExceptions_EnabledAlready) return;
 			CatchAllExceptions_EnabledAlready = true;
 
-			if (firstChaneException) 
+			if (firstChaneExceptionsToo)
 				AppDomain.CurrentDomain.FirstChanceException += HandleUnhandledException;
 			else
-				AppDomain.CurrentDomain.UnhandledException += HandleUnhandledException; 
+				AppDomain.CurrentDomain.UnhandledException += HandleUnhandledException;
+			if (act!= null)
+            {
+				CatchAllExceptions_allExceptionHandler = act;
+			} 
+			else
+            {
+				CatchAllExceptions_FileOrWindow = FileOrWindow;
+			}
+		}
+		public static void CatchAllExceptions_OFF(bool firstChaneException, bool FileOrWindow)
+		{
+			if (!CatchAllExceptions_EnabledAlready) return;
+			CatchAllExceptions_EnabledAlready = false;
+
+			if (firstChaneException)
+				AppDomain.CurrentDomain.FirstChanceException -= HandleUnhandledException;
+			else
+				AppDomain.CurrentDomain.UnhandledException -= HandleUnhandledException;
 			CatchAllExceptions_FileOrWindow = FileOrWindow;
 		}
 
 		public static bool inCatchAllLoop = false;
+		public static Action<string> CatchAllExceptions_allExceptionHandler;
 		public static void HandleUnhandledException(object sender, object e)
 		{
 			if (!inCatchAllLoop)
@@ -5304,8 +5256,14 @@ namespace PuvoxLibrary
 					finalStr = ExceptionMessage( ((System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs)e).Exception ) ;
 				else
 					finalStr = e.ToString();
-
-				AddTextToPopup("catchExceptionsForm", finalStr);
+				if (CatchAllExceptions_allExceptionHandler != null)
+                {
+					CatchAllExceptions_allExceptionHandler(finalStr);
+                } 
+				else
+				{
+					AddTextToPopup("catchExceptionsForm", finalStr);
+				}
 				inCatchAllLoop = false;
 			}
 		}
