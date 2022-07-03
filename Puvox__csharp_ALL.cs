@@ -1090,32 +1090,19 @@ namespace PuvoxLibrary
 
 		#region Registry
 
-		public static RegistryHive chosenRegHive = RegistryHive.CurrentUser;    //NT 8 Cannot implicitly convert type 'Microsoft.Win32.RegistryKey' to 'Microsoft.Win32.RegistryHive'	
+		public static RegistryHive defaultRegistryHive = RegistryHive.CurrentUser;
 		public static RegistryKey chosenRegKey = Registry.CurrentUser;
-		public static string ProgramName { get; set; }
-		public static string RegBaseKey_ = "";
-		public static string getRegistryPathForKey(string currentAppSlug, string companySlug)
+		//NT 8 Cannot implicitly convert type 'Microsoft.Win32.RegistryKey' to 'Microsoft.Win32.RegistryHive'
+		public static string parsePrognameIntoRegPath(string programNamespace = "MyCompany/MyApp")
 		{
-			var companySlugFinal = string.IsNullOrEmpty(companySlug) ? "AppSettingsStorage_puvox" : companySlug;
-			return "SOFTWARE\\" + companySlugFinal + "\\" + currentAppSlug + "\\";
-		}
-		public static string RegBaseKey()
-		{
-			if (RegBaseKey_ == "")
+			string[] paths = programNamespace.Split('/');
+			if (paths.Length < 2)
 			{
-				if (string.IsNullOrEmpty(ProgramName))
-                {
-					throw new Exception("Please set .ProgramName property to i.e. 'MyCompany/MyAppName', otherwise Library methods can't function normally.");
-				}
-				string[] paths = ProgramName.Split('/');
-				if (paths.Length < 2)
-                {
-					throw new Exception(" .ProgramName property needs to be a namespace like string i.e. 'MyCompany/MyAppName'");
-				}
-				RegBaseKey_ = getRegistryPathForKey(paths[1], paths[0]);
+				throw new Exception("programNamespace needs to be separaeted with slash string i.e. 'MyCompany/myApp'");
 			}
-			return RegBaseKey_;
+			return "Software\\" + paths[0] + "\\" + paths[1] + "\\";
 		}
+
 		public static RegistryKey getRegistryHiveKey(RegistryHive rh)
 		{
 			//3.5
@@ -1183,12 +1170,13 @@ namespace PuvoxLibrary
 		//}
 		public static bool existsRegistryValue(string path, string key)
 		{
-			return existsRegistryValue(getRegistryHiveKey(chosenRegHive), path, key);
+			return existsRegistryValue(defaultRegistryHive, path, key);
 			//string path = regPartFromKey(pathKey, true);
 			//string key = regPartFromKey(pathKey, false);
 		}
-		public static bool existsRegistryValue(RegistryKey registryHiveKey, string path, string key)
+		public static bool existsRegistryValue(RegistryHive registryHive, string path, string key)
 		{
+			RegistryKey registryHiveKey = getRegistryHiveKey(registryHive);
 			if (registryHiveKey == null)
 			{
 				return false;
@@ -1218,20 +1206,17 @@ namespace PuvoxLibrary
 		//{
 		//	return getRegistryValue(regPartFromKey(key, 1), regPartFromKey(key, 2));
 		//}
-		public static string getRegistryValue(string key, string defaultValue, bool createIfNotExists = false)
-		{
-			return getRegistryValue(RegBaseKey(), key, defaultValue, createIfNotExists);
-		}
 		//  ----- 62 vs 32 :  https://apttech.wordpress.com/2012/01/06/difference-between-a-registry-hive-and-registry-key-2/
-		public static string getRegistryValue(string path, string key, object defaultValue, bool createIfNotExists = false)
+		public static string getRegistryValue(string programNamespace, string key, object defaultValue, bool createIfNotExists = false)
 		{
-			return getRegistryValue(getRegistryHiveKey(chosenRegHive), path, key, defaultValue, createIfNotExists);
+			return getRegistryValue(defaultRegistryHive, parsePrognameIntoRegPath(programNamespace), key, defaultValue, createIfNotExists);
 		}
-		public static string getRegistryValue(RegistryKey registryHiveKey, string path, string key, object defaultValue, bool createIfNotExists = false)
+		public static string getRegistryValue(RegistryHive registryHive,string path, string key, object defaultValue, bool createIfNotExists = false)
 		{
 			string result = null;
 			try
 			{
+				RegistryKey registryHiveKey = getRegistryHiveKey(registryHive); 
 				//if cached
 				if (myregs.ContainsKey(path + key))
 				{
@@ -1261,7 +1246,7 @@ namespace PuvoxLibrary
 						result = defaultValue == null ? null : defaultValue.ToString();
 						if (createIfNotExists)
                         {
-							setRegistryValue(registryHiveKey, path, key, result);
+							setRegistryValue(registryHive, path, key, result);
                         }
 					} 
 					else
@@ -1277,15 +1262,16 @@ namespace PuvoxLibrary
 			return result;
 		}
 
-		public static bool setRegistryValue(string path, string key, string value)
+		public static bool setRegistryValue(string programNamespace, string key, string value)
 		{
-			return setRegistryValue(getRegistryHiveKey(chosenRegHive), path, key, value);
+			return setRegistryValue(defaultRegistryHive, parsePrognameIntoRegPath(programNamespace), key, value);
 		}
-		public static bool setRegistryValue(RegistryKey registryHiveKey, string path, string key, string value)
+		public static bool setRegistryValue(RegistryHive registryHive, string path, string key, string value)
 		{
 			bool result;
 			try
 			{
+				RegistryKey registryHiveKey = getRegistryHiveKey(registryHive);
 				if (registryHiveKey != null)
 				{
 					RegistryKey registryKey = registryHiveKey.OpenSubKey(path, true);
@@ -1340,8 +1326,6 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-
-
 		public static bool Write(string subKey, string KeyName, object Value)
 		{
 			bool result;
@@ -1359,8 +1343,6 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-
-
 		public static bool DeleteKey(string subKey, string KeyName)
 		{
 			bool result;
@@ -1385,8 +1367,6 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-
-
 		public static bool DeleteSubKeyTree(string subKey)
 		{
 			bool result;
@@ -1407,8 +1387,6 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-
-
 		public static int SubKeyCount(string subKey)
 		{
 			int result;
@@ -1425,8 +1403,6 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-
-
 		public static int ValueCount(string subKey)
 		{
 			int result;
@@ -1443,8 +1419,7 @@ namespace PuvoxLibrary
 			}
 			return result;
 		}
-
-		public static string RegRootOfThisProg = "";
+		 
 		public static Dictionary<string, string> RegistryValuesInFolder(string keyroot)
 		{
 			Dictionary<string, string> result;
@@ -1602,6 +1577,11 @@ namespace PuvoxLibrary
 				}
 			}
 			return num;
+		}
+
+		public static string[] splitByString(string what, string with)
+        {
+			return what.Split(new string[] { with }, StringSplitOptions.None);
 		}
 
 		public static string sanitizer(string dirtyString)
@@ -2760,7 +2740,7 @@ namespace PuvoxLibrary
 					string value = control.Text;
 					//checkbox checking need to be saved as string
 					if (control is System.Windows.Forms.CheckBox) value = ((System.Windows.Forms.CheckBox)control).Checked ? "true" : "false";
-					setRegistryValue(regKeyBase + optionsPrefix + control.Name, value);
+					setRegistryValue(regKeyBase, optionsPrefix + control.Name, value);
 
 				}
 			}
@@ -2783,7 +2763,7 @@ namespace PuvoxLibrary
 					{
 						value = control.Text;
 					}
-					setRegistryValue(optionsPrefix + control.Name, value);
+					//zz setRegistryValue(optionsPrefix + control.Name, value);
 				}
 			}
 			return true;
@@ -2828,7 +2808,7 @@ namespace PuvoxLibrary
 						string targetName = control.Name;
 						if (targetName.StartsWith("option_"))
 						{
-							setRegistryValue(regKeyBase + optionsPrefix + control.Name, controlValueGet(control));
+							setRegistryValue(regKeyBase, optionsPrefix + control.Name, controlValueGet(control));
 						}
 					}
 				}, true);
@@ -3703,7 +3683,7 @@ namespace PuvoxLibrary
 						val_this = v.Key; //GTranslate_checker(v.Key, lang_2char);
 					}
 
-					setRegistryValue(keyNm_this, val_this);
+					setRegistryValue(translationsBaseReg, keyNm_this, val_this);
 				}
 				SetControlText(frm, v.Value, val_this);
 			}
@@ -3761,7 +3741,7 @@ namespace PuvoxLibrary
 				else
 				{
 					result = englishText;
-					setRegistryValue(key, englishText);
+					setRegistryValue(translationsBaseReg, key, englishText);
 				}
 				transl_texts[englishText][targetLang] = result;
 			}
@@ -4790,6 +4770,38 @@ namespace PuvoxLibrary
 
 				memoryStream = new MemoryStream();
 				cryptoStream = new CryptoStream(memoryStream, encryptor.CreateEncryptor(), CryptoStreamMode.Write); // write to memory stream
+			}
+		}
+        #endregion
+
+
+        #region local-simple-enc-dec
+        public static class CryptoHelper
+		{
+			private const string Key = "MyHashString";
+			private static TripleDESCryptoServiceProvider GetCryproProvider()
+			{
+				var md5 = new MD5CryptoServiceProvider();
+				var key = md5.ComputeHash(Encoding.UTF8.GetBytes(Key));
+				return new TripleDESCryptoServiceProvider() { Key = key, Mode = CipherMode.ECB, Padding = PaddingMode.PKCS7 };
+			}
+
+			public static string Encrypt(string plainString)
+			{
+				var data = Encoding.UTF8.GetBytes(plainString);
+				var tripleDes = GetCryproProvider();
+				var transform = tripleDes.CreateEncryptor();
+				var resultsByteArray = transform.TransformFinalBlock(data, 0, data.Length);
+				return Convert.ToBase64String(resultsByteArray);
+			}
+
+			public static string Decrypt(string encryptedString)
+			{
+				var data = Convert.FromBase64String(encryptedString);
+				var tripleDes = GetCryproProvider();
+				var transform = tripleDes.CreateDecryptor();
+				var resultsByteArray = transform.TransformFinalBlock(data, 0, data.Length);
+				return Encoding.UTF8.GetString(resultsByteArray);
 			}
 		}
 		#endregion
@@ -6076,7 +6088,7 @@ namespace PuvoxLibrary
 			Version = version;
 			Language = language;
 			BaseProductUrl = productUrl;
-			RegRootOfThisProg = PuvoxLibrary.Methods.getRegistryPathForKey(Slug, baseCompanyName);
+			RegRootOfThisProg = ""; //zz PuvoxLibrary.Methods.getRegistryPathForKey(Slug, baseCompanyName);
 
 			contactUrl = baseDomain + baseContactPath;
 			initialized = true;
