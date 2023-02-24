@@ -1840,23 +1840,13 @@ namespace PuvoxLibrary
 		public static string md5(string input)
 		{
 			string result;
-			try
+			using (MD5 md = MD5.Create())
 			{
-				using (MD5 md = MD5.Create())
-				{
-					byte[] bytes = Encoding.ASCII.GetBytes(input);
-					byte[] array = md.ComputeHash(bytes);
-					StringBuilder stringBuilder = new StringBuilder();
-					for (int i = 0; i < array.Length; i++)
-					{
-						stringBuilder.Append(array[i].ToString("X2"));
-					}
-					result = stringBuilder.ToString();
-				}
-			}
-			catch (Exception)
-			{
-				result = "";
+				byte[] bytes = Encoding.ASCII.GetBytes(input);
+				byte[] array = md.ComputeHash(bytes);
+				StringBuilder stringBuilder = new StringBuilder();
+				for (int i = 0; i < array.Length; i++) stringBuilder.Append(array[i].ToString("X2"));
+				result = stringBuilder.ToString();
 			}
 			return result;
 		}
@@ -2896,12 +2886,12 @@ namespace PuvoxLibrary
 		#region Timer 
 
 		// method 1:
-		public TimerInterrupter SetInterval(int interval, Action function)
+		public static TimerInterrupter SetInterval(int interval, Action function)
 		{
 			return StartTimer(interval, function, true);
 		}
 
-		public TimerInterrupter SetTimeout(int interval, Action function)
+		public static TimerInterrupter SetTimeout(int interval, Action function)
 		{
 			return StartTimer(interval, function, false);
 		}
@@ -2927,7 +2917,7 @@ namespace PuvoxLibrary
 			private readonly System.Timers.Timer _timer;
 		}
 
-		private TimerInterrupter StartTimer(int interval, Action function, bool autoReset)
+		private static TimerInterrupter StartTimer(int interval, Action function, bool autoReset)
 		{
 			TimerInterrupter result;
 			try
@@ -2988,7 +2978,7 @@ namespace PuvoxLibrary
 			System.Timers.Timer timer = new System.Timers.Timer();
 			//timer.Elapsed += myMethod.Invoke;   //Action<object, System.Timers.ElapsedEventArgs> myMethod
 			//timer.Elapsed += new System.Timers.ElapsedEventHandler((object a, System.Timers.ElapsedEventArgs b) => myMethod());
-			timer.Elapsed += new Action<object, System.Timers.ElapsedEventArgs>((object a, System.Timers.ElapsedEventArgs b) => myMethod()).Invoke;
+			timer.Elapsed += new System.Timers.ElapsedEventHandler(new Action<object, System.Timers.ElapsedEventArgs>((object a, System.Timers.ElapsedEventArgs b) => { myMethod(); }));
 			timer.Interval = (double)intervalMS;
 			timer.AutoReset = autoreset;
 			timer.Start();
@@ -3080,21 +3070,21 @@ namespace PuvoxLibrary
 				// return int.Parse(DateTime.ParseExact(timenow.ToString("0000"), "HHmm", null).AddMinutes((double)added_or_subtracted).ToString("HHmm"));
 			}
 
-			public static string DatetimeToString(DateTime dt)
+			public static DateTime DatetimeKindCorrect(DateTime dt)
 			{
-				return dt.ToString("yyyy-MM-dd HH:mm:ss");
+				if (dt.Kind == DateTimeKind.Unspecified) {
+					dt = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+				}
+				return dt;
 			}
-			public static string DatetimeToStringMS(DateTime dt)
+
+			public static string DatetimeToStringUtc(DateTime dt, bool withMS = true, bool withTZ = true)
 			{
-				return dt.ToString("yyyy-MM-dd HH:mm:ss.fff");
+				return helper_DatetimeToUniversalTime(dt).ToString("yyyy-MM-dd" + (withTZ ? "T" : "") + "HH:mm:ss" + (withMS ? ".fff" : "")  + (withTZ ? "Z" : ""));
 			}
-			public static string DatetimeToStringWithTZ(DateTime dt)
+			public static string DatetimeToStringLocal(DateTime dt, bool withMS = true, bool withT = false)
 			{
-				return dt.ToString("yyyy-MM-ddTHH:mm:ssZ");  // adding ' Z' in the end will results in UTC meaning
-			}
-			public static string DatetimeToStringMSWithTZ(DateTime dt)
-			{
-				return dt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");  // adding ' Z' in the end will results in UTC meaning
+				return helper_DatetimeToLocalTime(dt).ToString("yyyy-MM-dd" + (withT ? "T" : "") + "HH:mm:ss" + (withMS ? ".fff" : ""));
 			}
 
 			public static DateTime StringToDatetime(string s, string format)
@@ -3111,19 +3101,23 @@ namespace PuvoxLibrary
 				catch (FormatException) { throw; }
 				catch (Exception) { throw; } // Given Culture is not supported culture
 			}
-			public static DateTime UtcStringToDatetime(string gmtStr)
+			//UtcStringToDatetime(string gmtStr) return DateTime.ParseExact(gmtStr, "yyyy-MM-dd HH:mm:ss Z", CultureInfo.InvariantCulture);
+
+			public static DateTime UtcDatetime()
 			{
-				return DateTime.ParseExact(gmtStr, "yyyy-MM-dd HH:mm:ss Z", CultureInfo.InvariantCulture);
-			}
-
-
-			public static DateTime UtcDatetime(DateTime? dt) {
-				return (dt ?? DateTime.Now).ToUniversalTime();
+				return UtcDatetimeFrom(DateTime.Now);
 				//return (new DateTime(dt.Ticks, DateTimeKind.Local)).ToUniversalTime();
 			}
+			public static DateTime UtcDatetimeFrom(DateTime dt)
+			{
+				return helper_DatetimeToUniversalTime(dt);
+			}
 
-			public static long UtcTimestamp(DateTime? dt){
-				return (dt.HasValue ? dt.Value.ToUniversalTime() : DateTimeOffset.UtcNow).ToUnixTimeMilliseconds();
+			public static long UtcTimestamp(){
+				return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+			}
+			public static long UtcTimestampFrom(DateTime dt){
+				return ((DateTimeOffset)helper_DatetimeToUniversalTime(dt)).ToUnixTimeMilliseconds();
 			}
 			public static DateTime UtcTimestampToUtcDatetime(long timestampMS)
 			{
@@ -3132,6 +3126,52 @@ namespace PuvoxLibrary
 			}
 
 
+
+			// shorthands
+			public static DateTime MaxDate(DateTime d1, DateTime d2)
+			{
+				d1 = helper_DatetimeToLocalTime(d1);
+				d2 = helper_DatetimeToLocalTime(d2);
+				return d1 > d2 ? d1 : d2;
+			}
+			public static DateTime MaxDate(DateTime d1, DateTime d2, DateTime d3)
+			{
+				d1 = helper_DatetimeToLocalTime(d1);
+				d2 = helper_DatetimeToLocalTime(d2);
+				d3 = helper_DatetimeToLocalTime(d3);
+				return MaxDate(MaxDate(d1, d2), d3);
+			}
+			public static DateTime MinDate(DateTime d1, DateTime d2)
+			{
+				d1 = helper_DatetimeToLocalTime(d1);
+				d2 = helper_DatetimeToLocalTime(d2);
+				return d1 < d2 ? d1 : d2;
+			}
+			public static DateTime MinDate(DateTime d1, DateTime d2, DateTime d3)
+			{
+				d1 = helper_DatetimeToLocalTime(d1);
+				d2 = helper_DatetimeToLocalTime(d2);
+				d3 = helper_DatetimeToLocalTime(d3);
+				return MinDate(MinDate(d1, d2), d3);
+			}
+			public static bool areSameDays(DateTime d1, DateTime d2)
+			{
+				d1 = helper_DatetimeToLocalTime(d1);
+				d2 = helper_DatetimeToLocalTime(d2);
+				return d1.Year == d2.Year && d1.Month == d2.Month && d1.Day == d2.Day;
+			}
+
+			//
+			public static DateTime helper_DatetimeToUniversalTime(DateTime dt)
+			{
+				dt = DatetimeKindCorrect(dt);
+				return dt.ToUniversalTime();
+			}
+			public static DateTime helper_DatetimeToLocalTime(DateTime dt)
+			{
+				dt = DatetimeKindCorrect(dt);
+				return dt.ToLocalTime();
+			}
 			//  return date.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
 			//	date = "29021996".ToDateTime(format: "ddMMyyyy"); // {29.02.1996 00:00:00}
 			//	date = "2016 3".ToDateTime("yyyy M"); // {01.03.2016 00:00:00}
@@ -5291,7 +5331,7 @@ namespace PuvoxLibrary
 					var uniqString = containerKey;
 					var textareaName = uniqString + "_textarea";
 
-					var newTxt = Environment.NewLine + Environment.NewLine + "•" + DateUtils.DatetimeToString(DateTime.Now) + " ::: "+ message;
+					var newTxt = Environment.NewLine + Environment.NewLine + "•" + DateUtils.DatetimeToStringLocal(DateTime.Now) + " ::: "+ message;
 
 					if (!allPopupTexts.ContainsKey(uniqString)) allPopupTexts[uniqString] = "";
 					allPopupTexts[uniqString] =   allPopupTexts[uniqString] + newTxt;
@@ -5473,7 +5513,7 @@ namespace PuvoxLibrary
 
 		public static void logError(object obj_)
 		{
-			FileOperations.Write(errorLogFile, DateUtils.DatetimeToString(DateTime.Now) + Environment.NewLine + obj_.ToString() + Environment.NewLine);
+			FileOperations.Write(errorLogFile, DateUtils.DatetimeToStringLocal(DateTime.Now) + Environment.NewLine + obj_.ToString() + Environment.NewLine);
 		}
 
 		private static string isDeveloperMode_contents = "-1";
