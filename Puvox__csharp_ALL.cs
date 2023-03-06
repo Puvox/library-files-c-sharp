@@ -930,8 +930,7 @@ namespace PuvoxLibrary
 
 	public static bool fieldExists(object obj_, string fieldName){
 		FieldInfo fieldInfo 
-			= obj_.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public)
-					.FirstOrDefault(x => x.Name.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+			= obj_.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public) .FirstOrDefault(x => x.Name.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
 		if(fieldInfo != null)
 		{
 			return true;
@@ -1059,7 +1058,7 @@ namespace PuvoxLibrary
 				}
 				else
 				{
-					MethodInfo method = classType.GetMethod(methodName, regularBindingFlags);
+					MethodInfo method = classType.GetMethod(methodName, bindingFlagsRegulars);
 					if (method == null)
 					{
 						m("You are trying to trigger non-existing method:" + methodName + "(" + className + ")");
@@ -1661,14 +1660,11 @@ namespace PuvoxLibrary
 		}
 
 
-		public static string pChars(string txt)
+		public static string addIndent(string txt, int maxLength = 25)
 		{
-			int num = Math.Max(1, 25 - txt.Length);
-			string text = txt + new string(' ', num);
-			if (num > 1)
-			{
-				text += '\t';
-			}
+			double remainingLetters = Math.Max(1, maxLength - txt.Length);
+			int tabsNeeded = (int)Math.Floor(remainingLetters/4);
+			string text = txt + new string('\t', tabsNeeded);
 			return text;
 		}
 
@@ -2321,7 +2317,6 @@ namespace PuvoxLibrary
 		}
 
 
-
 		// i.e:  PuvoxLibrary.Methods.attachEvents(foundChart, new Action<object>(Print));
 		public static void attachEvents(object obj, Action<object> printAct)
 		{
@@ -2332,7 +2327,7 @@ namespace PuvoxLibrary
 					printAct("nulllllllll");
 					return;
 				}
-				var bf = BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public;
+				var bf = bindingFlagsRegulars;
 				//MethodInfo method = this.GetType().GetMethod("MyEventHandler", bf);
 				var act = (new Action<object, object>((sender, eventargs) => {
 					try
@@ -3222,44 +3217,6 @@ namespace PuvoxLibrary
 
 
 
-		#region Reflection Manipulation
-		public static List<string> PropertyInfoToList(PropertyInfo[] PropList)
-		{
-			List<string> list = new List<string>();
-			foreach (PropertyInfo propertyInfo in PropList)
-			{
-				list.Add(propertyInfo.Name);
-			}
-			return list;
-		}
-
-		public static List<string> ObjectPropertyNames(object Obj)
-		{
-			return PropertyInfoToList(Obj.GetType().GetProperties());
-		}
-
-
-		public static bool MethodExists(object objectToCheck, string methodName)
-		{
-			return objectToCheck.GetType().GetMethod(methodName) != null;
-		}
-
-
-		public static string Trace(Exception ex)
-		{
-			StackTrace stackTrace = new StackTrace(ex, true);
-			StackFrame frame = stackTrace.GetFrame(0);
-			return frame.GetFileLineNumber().ToString();
-		}
-		#endregion
-
-
-
-
-
-
-
-
 
 
 
@@ -3735,7 +3692,7 @@ namespace PuvoxLibrary
 			if (MethodExists(null, "GTranslate_callback"))
 			{
 				Type typeFromHandle = typeof(Methods);
-				MethodInfo method = typeFromHandle.GetMethod("GTranslate_callback", BindingFlags.Instance | BindingFlags.Public);
+				MethodInfo method = typeFromHandle.GetMethod("GTranslate_callback", bindingFlagsRegulars);
 				result = (string)method.Invoke(null, new object[]  //this instead of null
 				{
 					what,
@@ -3837,7 +3794,7 @@ namespace PuvoxLibrary
 		public static void m(double obj) { m(obj.ToString()); }
 		public static void m(bool obj) { m(obj.ToString()); }
 		public static void m(Exception obj) { m(obj.ToString()); }
-		public static void m(Dictionary<object, object> obj) { try { m(tryEnumerabledString(obj)); } catch { m(obj.ToString()); } }
+		public static void m(Dictionary<object, object> obj) { try { m(tryEnumerabledString(obj, "")); } catch { m(obj.ToString()); } }
 		public static void m(object obj) { m(obj == null ? "object is null" : obj.ToString()); }
 		public static void m(object obj, bool showTrace) { m((obj == null ? "object is null" : obj.ToString()) + (!showTrace ? "" : Environment.NewLine + stackFramesString(new StackTrace()))); }
 		public static void m(object[] obj)
@@ -3881,6 +3838,181 @@ namespace PuvoxLibrary
 		public static string dump(object obj, int deep, bool execMethods) { return dump(obj, AllBindingFlags, execMethods, deep, 1, ""); }
 		public static string dump(object obj, BindingFlags bindingFlags, bool execMethods) { return dump(obj, bindingFlags, execMethods, 1, 1, ""); }
 		// ugly-fied
+		private static string dump(object obj, BindingFlags bindingFlags, bool execMethods, int maxRecursiveDeep, int currentDeep, string prefix)
+		{
+			string indentPhrase = prefix + " | ";
+			string arrowPointer = prefix + " -> ";
+
+			string NL = Environment.NewLine;
+			List<string> list = new List<string>();
+			Dictionary<string, List<string>> dictionary = new Dictionary<string, List<string>>();
+			; //System.Collections.ObjectModel.Collection 
+
+			string result = "";
+			result = NL + indentPhrase + (currentDeep == 1 ? ("<----------------- START ----------------->") : "-----------") + " >>>>> TYPE: " + obj.GetType().ToString() + " [" + obj.GetType().Module + " ] --->" + NL;
+
+			if (obj == null)
+			{
+				result += "object is NULL";
+			}
+			else if (IsSimpleType(obj))
+			{
+				result += obj.ToString();
+				print_("SIMPLE:" + result);
+			}
+			else try
+				{
+					string tmp1 = tryEnumerabledString(obj, " ");
+					if (tmp1 != "")
+					{
+						result += tmp1;
+					}
+					else
+					{
+						foreach (MemberInfo memberInfo in GetMembersInclPrivateBase_static(obj.GetType(), bindingFlags))
+						{
+							string memberType = ""; //field, property, method, etc...
+							string memberName = ""; try { memberName = memberInfo.Name; } catch { memberName = "__name_cant_detect__"; }
+							string returnType = "";
+							object memberValue = null;
+							string memberValueFinalString = "";
+							string finalValueLine = "";
+
+							string prefix2_ = nl_ + " ? " + arrowPointer + memberName;
+							try
+							{
+								if (memberInfo.MemberType == MemberTypes.Field)
+								{
+									FieldInfo fieldInfo = (FieldInfo)memberInfo;
+									memberValue = fieldInfo.GetValue(obj);
+									returnType = fieldInfo.FieldType.FullName;
+								}
+								else if (memberInfo.MemberType == MemberTypes.Property)
+								{
+									PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
+									memberValue = propertyInfo.GetValue(obj, null);
+									returnType = propertyInfo.PropertyType.FullName;
+								}
+								else if (memberInfo.MemberType == MemberTypes.Method)
+								{
+									MethodInfo methodInfo = (MethodInfo)memberInfo;
+									returnType = methodInfo.ReturnType.FullName;
+									memberValue = "(" + tryEnumerabledString(methodInfo.GetParameters(), ", ", "") + ")";
+									var noDeleteWords = !memberName.Contains("elete") && !memberName.Contains("emove") && !memberName.Contains("erase") && !memberName.Contains("Erase") && !memberName.Contains("Erase");
+									string[] saferMethodTypes = new string[] { "System.Double", "System.Int32", "System.String", "System.Float", "System.Type" };
+									if (execMethods && noDeleteWords && saferMethodTypes.Contains(returnType))
+									{
+										memberValue += " =========== ";
+										try
+										{
+											object obj2 = methodInfo.Invoke(obj, null);
+											memberValue += obj2 == null ? "null" : obj2.ToString();
+										}
+										catch (Exception)
+										{
+											memberValue += "--------------cant-Invoke";
+										}
+									}
+								}
+								else if (memberInfo.MemberType == MemberTypes.Constructor)
+								{
+									ConstructorInfo constructorInfo = (ConstructorInfo)memberInfo;
+									returnType = constructorInfo.ReflectedType.FullName;
+									if (constructorInfo == null) {
+										memberValue = "null";
+									}
+									else {
+										ParameterInfo[] parameters = constructorInfo.GetParameters();
+										memberValue =  tryEnumerabledString(parameters, ", ");
+									}
+								}
+								else if (memberInfo.MemberType == MemberTypes.Event)
+								{
+									EventInfo eventInfo = (EventInfo)memberInfo;
+									returnType = eventInfo.EventHandlerType.ToString();
+									memberValue = eventInfo == null ? "null" : "ToString: " + eventInfo.ToString();
+								}
+								else
+								{
+									returnType = "__return_type_unknown__";
+									memberValue = "ToStringed: " + memberInfo.ToString();
+								}
+								// ######################### //
+								if (memberValue == null || IsSimpleType(memberValue))
+								{
+									memberValueFinalString = tryEnumerabledString(memberValue, prefix2_);
+								}
+								else
+								{
+									if (currentDeep < maxRecursiveDeep)
+									{
+										memberValueFinalString = dump(memberValue, bindingFlags, execMethods, maxRecursiveDeep, currentDeep + 1, prefix2_);
+									}
+									else
+									{
+										memberValueFinalString = "__max_depth_reached_for_object__";
+									}
+								}
+								finalValueLine = "   [" + returnType + "] " + memberValueFinalString + " < Access: " + AccessModifierType(memberInfo) + " > ";
+							}
+							catch
+							{
+								finalValueLine = "--------------error-getting-value";
+							}
+							memberType = memberInfo.MemberType.ToString();
+							string line = indentPhrase + addIndent(memberType, 20) +  " " + addIndent(memberName) + finalValueLine;
+							if (!list.Contains(line)) {
+								list.Add(line);
+								line += NL;
+							}
+							else {
+								line = "";
+							}
+							var itemSlotKeyInDict = ""; //memberType
+							if (!dictionary.ContainsKey(itemSlotKeyInDict))
+							{
+								dictionary[itemSlotKeyInDict] = new List<string>();
+							}
+							dictionary[itemSlotKeyInDict].Add(line);
+						}
+					}
+				}
+				catch (Exception e)
+				{
+					result += ExceptionMessage(e, obj);
+					m(result);
+				}
+			string finalTxt = "";
+			foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
+			{
+				foreach (string str3 in (from q in keyValuePair.Value orderby q select q).ToList<string>())
+				{
+					finalTxt += str3;
+				}
+			}
+			result += finalTxt;
+			result = result + indentPhrase + ((currentDeep == 1) ? (NL + "<----------------- END ---------------------->" + NL + NL) : "-----------") + NL;
+			return result;
+		}
+		private static FieldInfo GetInheritedPrivateField(Type type, string fieldName)
+		{
+			do
+			{
+				var field = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+
+				if (field != null)
+				{
+					return field;
+				}
+
+				type = type.BaseType;
+			}
+			while (type != null);
+
+			return null;
+		}
+
+
 
 
 
@@ -3900,13 +4032,13 @@ namespace PuvoxLibrary
 				PropertyInfo propertyInfo = objInfo as PropertyInfo;
 				if (propertyInfo.SetMethod == null)
 				{
-					return "GetOnly:" + AccessModifierType(propertyInfo.GetMethod);
+					return "Get:" + AccessModifierType(propertyInfo.GetMethod);
 				}
 				if (propertyInfo.GetMethod == null)
 				{
-					return "SetOnly:" + AccessModifierType(propertyInfo.SetMethod);
+					return "Set:" + AccessModifierType(propertyInfo.SetMethod);
 				}
-				return AccessModifierType(propertyInfo.GetMethod) + " & " + AccessModifierType(propertyInfo.GetMethod);
+				return ("Get:" + AccessModifierType(propertyInfo.GetMethod) + " & Set:" + AccessModifierType(propertyInfo.SetMethod));
 			}
 			else if (objInfo is MethodInfo)
 			{
@@ -3916,24 +4048,38 @@ namespace PuvoxLibrary
 				if (methodInfo.IsAssembly) return "Internal";
 				if (methodInfo.IsPublic) return "Public";
 			}
-			return "Did not find access modifier";
+			else if (objInfo is ConstructorInfo)
+			{
+				ConstructorInfo cInfo = objInfo as ConstructorInfo;
+				if (cInfo.IsPrivate) return "Private";
+				if (cInfo.IsFamily) return "Protected";
+				if (cInfo.IsAssembly) return "Internal";
+				if (cInfo.IsPublic) return "Public";
+			}
+			return "__not_found__";
 		}
-		public static string tryEnumerabledString(object obj) { return tryEnumerabledString(obj, ""); }
-        public static string tryEnumerabledString(object obj, string prefix_)
+        public static string tryEnumerabledString(object obj, string prefix_, string divisor = " ::: ")
         {
             string text = "";
             try
             {
-                System.Collections.IEnumerable enumerable = obj as System.Collections.IEnumerable;
-                if (enumerable != null)
-                {
-                    bool prefixed = false;
-                    foreach (object obj2 in enumerable)
-                    {
-                        text = text + ((!prefixed && !prefix_.Contains(Environment.NewLine)) ? "" : prefix_) + " ::: " + (obj2 == null ? "null" : obj2.ToString());
-                        prefixed = true;
-                    }
-                }
+				if (obj == null) {
+					return "__null__";
+				}
+				else if (singleTypes.Contains(obj.GetType().ToString())) { 
+					return obj.ToString();
+                } else {
+					System.Collections.IEnumerable enumerable = obj as System.Collections.IEnumerable;
+					if (enumerable != null)
+					{
+						bool prefixed = false;
+						foreach (object obj2 in enumerable)
+						{
+							text = text + ((!prefixed && !prefix_.Contains(Environment.NewLine)) ? "" : prefix_) + divisor + (obj2 == null ? "null" : obj2.ToString());
+							prefixed = true;
+						}
+					}
+				}
             }
             catch (Exception ex)
             {
@@ -3941,7 +4087,8 @@ namespace PuvoxLibrary
             }
             return text;
         }
-		/*
+
+/*
 		public static IEnumerable<MemberInfo> GetMembers(Type type, bool getStatic=true, bool getPrivate=true, bool getBases=true) {
 			var memberList = ImmutableList<MemberInfo>.Empty;
 			if (type == typeof(Object)) return memberList;
@@ -3954,17 +4101,17 @@ namespace PuvoxLibrary
 			if (getBases) memberList = memberList.AddRange(GetMembers(type.BaseType, getStatic, getPrivate, getBases));
 			return memberList.Where(memberInfo => memberInfo is PropertyInfo || (memberInfo is FieldInfo && memberInfo.GetCustomAttribute<CompilerGeneratedAttribute>() == null)); // filter out property with backing fields
 		}
-		*/
+*/
 		// ===========================
-		public static BindingFlags regularBindingFlags = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public;
+		public static BindingFlags bindingFlagsRegulars = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public;
 		public static object callMethod(object o, string methodName, params object[] args)
 		{
-			MethodInfo method = o.GetType().GetMethod(methodName, regularBindingFlags);
+			MethodInfo method = o.GetType().GetMethod(methodName, bindingFlagsRegulars);
 			return method.Invoke(o, args);
 		}
 		public static object callMethodStatic(Type t, string methodName, params object[] args)
 		{
-			MethodInfo method = t.GetMethod(methodName, regularBindingFlags);
+			MethodInfo method = t.GetMethod(methodName, bindingFlagsRegulars);
 			return method.Invoke(t, args);
 		}
 
@@ -4073,148 +4220,63 @@ namespace PuvoxLibrary
 		// older propertyset : https://pastebin.com/W3WUDsWg
 		public static bool propertySet(object obj_, string propName, object value)
 		{
-			PropertyInfo propertyInfo = obj_.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault((PropertyInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
+			PropertyInfo propertyInfo = obj_.GetType().GetProperty(propName, bindingFlagsRegulars) ;// (bindingFlagsRegulars).FirstOrDefault((PropertyInfo x) => x.Name.Equals(propName)); //, StringComparison.OrdinalIgnoreCase
 			if (propertyInfo != null)
 			{
-				if (value is bool && ((bool)value || !(bool)value))
-				{
-					propertyInfo.SetValue(obj_, Convert.ToBoolean(value), null);
-					return true;
-				}
-				if (isInt(value))
-				{
-					propertyInfo.SetValue(obj_, (int) Convert.ToInt32(value), null);
-					return true;
-				}
-				if (isFloat(value))
-				{
+				if (propertyInfo.CanWrite) {
 					propertyInfo.SetValue(obj_, value, null);
 					return true;
+                } else {
+					var field = GetBackingField(obj_, propertyInfo);
+					if (field != null)
+					{
+						field.SetValue(obj_, value);
+						return true;
+					}
+					throw new Exception("can not modify readable " + propName);
 				}
-				if (isDouble(value))
-				{
-					propertyInfo.SetValue(obj_, (double)Convert.ToDouble(value), null);
-					return true;
-				}
-				propertyInfo.SetValue(obj_, value);
 			}
-			FieldInfo fieldInfo = obj_.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault((FieldInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
-			if (propertyInfo != null)
+			FieldInfo fieldInfo = obj_.GetType().GetFields(bindingFlagsRegulars).FirstOrDefault((FieldInfo x) => x.Name.Equals(propName));
+			if (fieldInfo != null)
 			{
-				if (value is bool && ((bool)value || !(bool)value))
-				{
-					fieldInfo.SetValue(obj_, Convert.ToBoolean(value));
-					return true;
-				}
-				if (isInt(value))
-				{
-					fieldInfo.SetValue(obj_, Convert.ToInt32(value));
-					return true;
-				}
-				if (isFloat(value))
-				{
-					fieldInfo.SetValue(obj_, value);
-					return true;
-				}
-				if (isDouble(value))
-				{
-					fieldInfo.SetValue(obj_, Convert.ToDouble(value));
-					return true;
-				}
 				fieldInfo.SetValue(obj_, value);
+				return true;
 			}
-			return false;
+			throw new Exception("can not find " + propName);
 		}
 
-
-		public static bool propertyExists(object obj_, string propName)
+		
+		public static BindingFlags bindingFlagsForField = BindingFlags.GetField | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+		private static FieldInfo GetBackingField(object obj_, PropertyInfo pi)
 		{
-			bool result;
-			try
+			FieldInfo myField = null;
+			string propName = pi.Name;
+			myField = obj_.GetType().GetRuntimeFields().Where(a => Regex.IsMatch(a.Name, "<" + propName + ">k__BackingField")).FirstOrDefault();
+			if (myField != null)
 			{
-				PropertyInfo left = obj_.GetType().GetProperties(AllBindingFlags).FirstOrDefault((PropertyInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
-				if (left != null)
-				{
-					result = true;
-				}
-				else
-				{
-					FieldInfo left2 = obj_.GetType().GetFields(AllBindingFlags).FirstOrDefault((FieldInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
-					if (left2 != null)
-					{
-						result = true;
-					}
-					else
-					{
-						result = false;
-					}
-				}
+				return myField;
 			}
-			catch (Exception)
+			myField = obj_.GetType().GetFields(bindingFlagsForField).Where(a => Regex.IsMatch(a.Name, "<" + propName + ">k__BackingField")).FirstOrDefault();
+			if (myField != null)
 			{
-				result = false;
+				return myField;
 			}
-			return result;
-		}
-
-
-		public static bool propertySet_static(object obj_, string propName, string value)
-		{
-			bool result;
-			try
-			{
-				PropertyInfo propertyInfo = obj_.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault((PropertyInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
-				if (propertyInfo != null)
-				{
-					if (value == "true" || value == "false")
-					{
-						propertyInfo.SetValue(obj_, Convert.ToBoolean(value), null);
-						return true;
-					}
-					if (isInt(value))
-					{
-						propertyInfo.SetValue(obj_, Convert.ToInt32(value), null);
-						return true;
-					}
-					if (isDouble(value))
-					{
-						propertyInfo.SetValue(obj_, Convert.ToDouble(value), null);
-						return true;
-					}
-				}
-				FieldInfo fieldInfo = obj_.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault((FieldInfo x) => x.Name.Equals(propName, StringComparison.OrdinalIgnoreCase));
-				if (propertyInfo != null)
-				{
-					if (value == "true" || value == "false")
-					{
-						fieldInfo.SetValue(obj_, Convert.ToBoolean(value));
-						return true;
-					}
-					if (isInt(value))
-					{
-						fieldInfo.SetValue(obj_, Convert.ToInt32(value));
-						return true;
-					}
-					if (isDouble(value))
-					{
-						fieldInfo.SetValue(obj_, Convert.ToDouble(value));
-						return true;
-					}
-				}
-				result = false;
-			}
-			catch (Exception)
-			{
-				result = false;
-			}
-			return result;
+			// rest is from: https://stackoverflow.com/a/34534181/2377343
+			if (!pi.CanRead || !pi.GetGetMethod(nonPublic: true).IsDefined(typeof(CompilerGeneratedAttribute), inherit: true))
+				return null;
+			var backingField = pi.DeclaringType.GetFields(bindingFlagsForField).Where(a => Regex.IsMatch(a.Name, "<" + propName + ">k__BackingField")).FirstOrDefault(); //GetField("<"+pi.Name +">k__BackingField", bindingFlagsForField);
+			if (backingField == null)
+				return null;
+			if (!backingField.IsDefined(typeof(CompilerGeneratedAttribute), inherit: true))
+				return null;
+			return backingField;
 		}
 
 
 		public static bool propertyHideOrShow(object obj_, string propertyName, bool Show_or_Hide)
 		{
 			BrowsableAttribute browsableAttribute = TypeDescriptor.GetProperties(obj_.GetType())[propertyName].Attributes[typeof(BrowsableAttribute)] as BrowsableAttribute;
-			FieldInfo field = browsableAttribute.GetType().GetField("Browsable", BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.NonPublic);
+			FieldInfo field = browsableAttribute.GetType().GetField("Browsable", bindingFlagsRegulars);
 			if (field != null)
 			{
 				field.SetValue(browsableAttribute, Show_or_Hide);
@@ -4224,136 +4286,52 @@ namespace PuvoxLibrary
 		}
 
 
-		// usage:  propertyGet<bool>(....)
-		public static Type propertyType(object obj_, string propName)
+		// ParameterInfo[] indexParameters = propertyInfo.GetIndexParameters();
+		// if (indexParameters.Count<ParameterInfo>() > 0 && !obj.ToString().Contains("+"))
+		// {
+		// 	object value = propertyInfo.GetValue(obj, null);
+		// 	if (propertyInfo.PropertyType.Assembly == type.Assembly && !propertyInfo.PropertyType.IsEnum)
+
+		public static bool MethodExists(object objectToCheck, string methodName)
 		{
-			PropertyInfo property = obj_.GetType().GetProperty(propName);
-			if (property != null)
-			{
-				return property.GetType();
-			}
-			FieldInfo field = obj_.GetType().GetField(propName);
-			if (field != null)
-			{
-				return field.GetType();
-			}
-			return null;
+			return objectToCheck.GetType().GetMethod(methodName) != null;
 		}
 
 
-		public static string PrintProperties(object obj)
+		public static string Trace(Exception ex)
 		{
-			return PrintProperties(obj, 0);
+			StackTrace stackTrace = new StackTrace(ex, true);
+			StackFrame frame = stackTrace.GetFrame(0);
+			return frame.GetFileLineNumber().ToString();
 		}
 
+		public static bool IsSimpleType(object obj)
+        {
+			var type = obj.GetType();
+			return type.IsPrimitive || type.IsValueType || new Type[] { typeof(string), typeof(decimal), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan), typeof(Guid) }.Contains(type) || type.IsEnum || Convert.GetTypeCode(type) != TypeCode.Object || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) && IsSimpleType(type.GetGenericArguments()[0]));
+			// obj is Boolean || obj is bool || obj is string || obj is double || obj is float || obj is long || obj is decimal || obj is int);
+		} 
 
-		public static string PrintProperties(object obj, int indent)
+
+		public static string assemblyName()
 		{
-			string result;
-			try
-			{
-				if (obj == null)
-				{
-					result = "";
-				}
-				else
-				{
-					string text = "";
-					string text2 = Repeat("~", indent + 1);
-					Type type = obj.GetType();
-					foreach (PropertyInfo propertyInfo in type.GetProperties())
-					{
-						ParameterInfo[] indexParameters = propertyInfo.GetIndexParameters();
-						if (indexParameters.Count<ParameterInfo>() > 0 && !obj.ToString().Contains("+"))
-						{
-							object value = propertyInfo.GetValue(obj, null);
-							if (propertyInfo.PropertyType.Assembly == type.Assembly && !propertyInfo.PropertyType.IsEnum)
-							{
-								text = text + text2 + propertyInfo.Name + ":";
-								text += PrintProperties(value, indent + 2);
-							}
-							else
-							{
-								object obj2 = text;
-								text = string.Concat(new object[]
-								{
-									obj2,
-									text2,
-									propertyInfo.Name,
-									":",
-									value
-								});
-							}
-						}
-					}
-					result = text;
-				}
-			}
-			catch (Exception)
-			{
-				result = "";
-			}
-			return result;
+			return System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
 		}
-
-
-
-		public static string DisplayObjectInfo(object o)
+		public static string assemblyTitle()
 		{
-			string result;
-			try
-			{
-				StringBuilder stringBuilder = new StringBuilder();
-				Type type = o.GetType();
-				stringBuilder.Append("Type: " + type.Name);
-				stringBuilder.Append("\r\n\r\nFields:");
-				FieldInfo[] fields = type.GetFields();
-				if (fields.Length > 0)
-				{
-					foreach (FieldInfo fieldInfo in fields)
-					{
-						stringBuilder.Append(string.Concat(new object[]
-						{
-							"\r\n ",
-							fieldInfo.ToString(),
-							" = ",
-							fieldInfo.GetValue(o)
-						}));
-					}
-				}
-				else
-				{
-					stringBuilder.Append("\r\n None");
-				}
-				stringBuilder.Append("\r\n\r\nProperties:");
-				PropertyInfo[] properties = type.GetProperties();
-				if (properties.Length > 0)
-				{
-					foreach (PropertyInfo propertyInfo in properties)
-					{
-						stringBuilder.Append(string.Concat(new object[]
-						{
-							"\r\n ",
-							propertyInfo.ToString(),
-							" = ",
-							propertyInfo.GetValue(o, null)
-						}));
-					}
-				}
-				else
-				{
-					stringBuilder.Append("\r\n None");
-				}
-				result = stringBuilder.ToString();
-			}
-			catch (Exception)
-			{
-				result = "";
-			}
-			return result;
+			return System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTitleAttribute>().Title;
 		}
-
-
+		public static string assemblyCompany()
+		{
+			return System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>().Company;
+		}
+		public static string assemblyGuid()
+		{
+			// (GuidAttribute)typeof(Program).Assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0].value;
+			//return System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttributes( System.Runtime.InteropServices.GuidAttribute), true)[0].ToString();
+			var currAssembly = System.Reflection.Assembly.GetExecutingAssembly();
+			return System.Runtime.InteropServices.Marshal.GetTypeLibGuidForAssembly(currAssembly).ToString();
+		}
 
 
 		public class CompareObjects
@@ -4422,211 +4400,6 @@ namespace PuvoxLibrary
 			// See https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
 			return new Dictionary<string, string>() { { "auto", "Automatic" }, { "af", "Afrikaans" }, { "sq", "Albanian" }, { "am", "Amharic" }, { "ar", "Arabic" }, { "hy", "Armenian" }, { "az", "Azerbaijani" }, { "eu", "Basque" }, { "be", "Belarusian" }, { "bn", "Bengali" }, { "bs", "Bosnian" }, { "bg", "Bulgarian" }, { "ca", "Catalan" }, { "ceb", "Cebuano" }, { "ny", "Chichewa" }, { "zh-cn", "Chinese Simplified" }, { "zh-tw", "Chinese Traditional" }, { "co", "Corsican" }, { "hr", "Croatian" }, { "cs", "Czech" }, { "da", "Danish" }, { "nl", "Dutch" }, { "en", "English" }, { "eo", "Esperanto" }, { "et", "Estonian" }, { "tl", "Filipino" }, { "fi", "Finnish" }, { "fr", "French" }, { "fy", "Frisian" }, { "gl", "Galician" }, { "ka", "Georgian" }, { "de", "German" }, { "el", "Greek" }, { "gu", "Gujarati" }, { "ht", "Haitian Creole" }, { "ha", "Hausa" }, { "haw", "Hawaiian" }, { "iw", "Hebrew" }, { "hi", "Hindi" }, { "hmn", "Hmong" }, { "hu", "Hungarian" }, { "is", "Icelandic" }, { "ig", "Igbo" }, { "id", "Indonesian" }, { "ga", "Irish" }, { "it", "Italian" }, { "ja", "Japanese" }, { "jw", "Javanese" }, { "kn", "Kannada" }, { "kk", "Kazakh" }, { "km", "Khmer" }, { "ko", "Korean" }, { "ku", "Kurdish (Kurmanji)" }, { "ky", "Kyrgyz" }, { "lo", "Lao" }, { "la", "Latin" }, { "lv", "Latvian" }, { "lt", "Lithuanian" }, { "lb", "Luxembourgish" }, { "mk", "Macedonian" }, { "mg", "Malagasy" }, { "ms", "Malay" }, { "ml", "Malayalam" }, { "mt", "Maltese" }, { "mi", "Maori" }, { "mr", "Marathi" }, { "mn", "Mongolian" }, { "my", "Myanmar (Burmese)" }, { "ne", "Nepali" }, { "no", "Norwegian" }, { "ps", "Pashto" }, { "fa", "Persian" }, { "pl", "Polish" }, { "pt", "Portuguese" }, { "ma", "Punjabi" }, { "ro", "Romanian" }, { "ru", "Russian" }, { "sm", "Samoan" }, { "gd", "Scots Gaelic" }, { "sr", "Serbian" }, { "st", "Sesotho" }, { "sn", "Shona" }, { "sd", "Sindhi" }, { "si", "Sinhala" }, { "sk", "Slovak" }, { "sl", "Slovenian" }, { "so", "Somali" }, { "es", "Spanish" }, { "su", "Sundanese" }, { "sw", "Swahili" }, { "sv", "Swedish" }, { "tg", "Tajik" }, { "ta", "Tamil" }, { "te", "Telugu" }, { "th", "Thai" }, { "tr", "Turkish" }, { "uk", "Ukrainian" }, { "ur", "Urdu" }, { "uz", "Uzbek" }, { "vi", "Vietnamese" }, { "cy", "Welsh" }, { "xh", "Xhosa" }, { "yi", "Yiddish" }, { "yo", "Yoruba" }, { "zu", "Zulu" } };
 		}
-
-		public static bool IsSimpleType(object obj)
-        {
-			var type = obj.GetType();
-			return type.IsPrimitive || type.IsValueType || new Type[] { typeof(string), typeof(decimal), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan), typeof(Guid) }.Contains(type) || type.IsEnum || Convert.GetTypeCode(type) != TypeCode.Object || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) && IsSimpleType(type.GetGenericArguments()[0]));
-			// obj is Boolean || obj is bool || obj is string || obj is double || obj is float || obj is long || obj is decimal || obj is int);
-		}
-		private static string dump(object obj, BindingFlags bindingFlags, bool execMethods, int maxRecursiveDeep, int currentDeep, string prefix)
-		{
-			string indentPhrase = prefix + " | ";
-			string arrowPointer = prefix + " -> ";
-
-			string NL = Environment.NewLine;
-			List<string> list = new List<string>();
-			Dictionary<string, List<string>> dictionary = new Dictionary<string, List<string>>();
-			; //System.Collections.ObjectModel.Collection 
-
-			string result = "";
-			result = NL + indentPhrase + (currentDeep == 1 ? ("<----------------- START ----------------->") : "-----------") + " >>>>> TYPE: " + obj.GetType().ToString() + " --->" + NL;
-
-			if (obj == null)
-			{
-				result += "object is NULL";
-			}
-			else if (IsSimpleType(obj))
-			{
-				result += obj.ToString();
-				print_("SIMPLE:"+ result);
-			}
-			else try
-			{
-				string tmp1 = tryEnumerabledString(obj, " ");
-				if (tmp1 != "")
-				{
-					result += tmp1;
-				}
-				else
-				{
-					foreach (MemberInfo memberInfo in GetMembersInclPrivateBase_static(obj.GetType(), bindingFlags))
-					{
-						string name_ = "__cant_detect__"; try { name_ = memberInfo.Name; } catch { }
-						string value_ = "__cant_detect__";
-
-
-						string type_ = memberInfo.MemberType.ToString();
-						string prefix2_ = nl_ + " ? " + arrowPointer + name_;
-						try
-						{
-
-							if (memberInfo.MemberType == MemberTypes.Field || memberInfo.MemberType == MemberTypes.Property)
-							{
-
-								object value = null;
-								if (memberInfo.MemberType == MemberTypes.Field)
-								{
-									FieldInfo fieldInfo = (FieldInfo)memberInfo;
-									value = fieldInfo.GetValue(obj);
-								}
-								else if (memberInfo.MemberType == MemberTypes.Property)
-								{
-									PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
-									value = propertyInfo.GetValue(obj, null);
-								}
-								// 
-								if (value == null)
-								{
-									value_ = "null";
-								}
-								else
-								{
-									value_ = "   [" + value.GetType().FullName + "] " + value.ToString() + " < " + AccessModifierType(memberInfo) + " > ";
-									if (!singleTypes.Contains(value.GetType().ToString()))
-									{
-										string text9 = tryEnumerabledString(value, prefix2_);
-										if (text9 != "")
-										{
-											value_ += text9;
-										}
-										else if (currentDeep < maxRecursiveDeep)
-										{
-											value_ += dump(value, bindingFlags, execMethods, maxRecursiveDeep, currentDeep + 1, prefix2_);
-										}
-									}
-								}
-							}
-							else
-							{
-								if (memberInfo.MemberType == MemberTypes.Method)
-								{
-									MethodInfo methodInfo = (MethodInfo)memberInfo;
-									string text11 = methodInfo.ReturnType.ToString();
-									value_ = string.Concat(new string[] { "   [", text11.Replace("System.", ""), "]  (", tryEnumerabledString(methodInfo.GetParameters(), ", "), ")  <", AccessModifierType(methodInfo), ">" });
-									var noDeleteWords = !name_.Contains("elete") && !name_.Contains("emove") && !name_.Contains("erase") && !name_.Contains("Erase");
-									if (execMethods && noDeleteWords)
-									{
-										string[] source = new string[]
-										{ "System.Double", "System.Int32", "System.String", "System.Float", "System.Type" };
-										if (source.Contains(text11))
-										{
-											try
-											{
-												object obj2 = methodInfo.Invoke(obj, null);
-												if (obj2 != null)
-												{
-													object obj3 = value_;
-													value_ = string.Concat(new object[] { obj3, "========", obj2.ToString(), "   [", obj2.GetType(), "]" });
-												}
-											}
-											catch (Exception)
-											{
-												value_ += "--------------cant-Invoke";
-											}
-										}
-
-									}
-								}
-								else if (memberInfo.MemberType == MemberTypes.Constructor)
-								{
-									ConstructorInfo constructorInfo = (ConstructorInfo)memberInfo;
-									ConstructorInfo left = constructorInfo;
-									if (left == null)
-									{
-										value_ = "null";
-									}
-									else
-									{
-										ParameterInfo[] parameters = constructorInfo.GetParameters();
-										value_ = "params:" + parameters.ToString() + "   [type:" + parameters.GetType() + "]";
-									}
-								}
-								else if (memberInfo.MemberType == MemberTypes.Event)
-								{
-									EventInfo eventInfo = (EventInfo)memberInfo;
-
-									value_ = eventInfo == null ? "null" : "ToString: " + eventInfo.ToString();
-
-								}
-								else
-								{
-									value_ = "ToStringed: " + memberInfo.ToString();
-								}
-							}
-						}
-						catch
-						{
-							value_ += "--------------error-getting-value";
-						}
-						string str2 = pChars(name_) + value_;
-						string line = indentPhrase + type_ + ":    " + str2;
-						if (!list.Contains(line))
-						{
-							list.Add(line);
-							line += NL;
-						}
-						else
-						{
-							line = "";
-						}
-						if (!dictionary.ContainsKey(type_))
-						{
-							dictionary[type_] = new List<string>();
-						}
-						dictionary[type_].Add(line);
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				result += ExceptionMessage(e, obj);
-				m(result);
-			}
-			string finalTxt = "";
-			foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
-			{
-				foreach (string str3 in (from q in keyValuePair.Value orderby q select q).ToList<string>())
-				{
-					finalTxt += str3;
-				}
-			}
-			result += finalTxt;
-			result = result + indentPhrase + ((currentDeep == 1) ? (NL+"<----------------- END ---------------------->" + NL + NL) : "-----------") + NL;
-			return result;
-		}
-
-
-		public static string assemblyName()
-		{
-			return System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-		}
-		public static string assemblyTitle()
-		{
-			return System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTitleAttribute>().Title;
-		}
-		public static string assemblyCompany()
-		{
-			return System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>().Company;
-		}
-		public static string assemblyGuid()
-		{
-			// (GuidAttribute)typeof(Program).Assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0].value;
-			//return System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttributes( System.Runtime.InteropServices.GuidAttribute), true)[0].ToString();
-			var currAssembly = System.Reflection.Assembly.GetExecutingAssembly();
-			return System.Runtime.InteropServices.Marshal.GetTypeLibGuidForAssembly(currAssembly).ToString();
-		}
-
 
 
 		public static string[] removeEmptyStrings(string[] strings)
