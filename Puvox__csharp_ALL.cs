@@ -2327,7 +2327,7 @@ namespace PuvoxLibrary
 					printAct("nulllllllll");
 					return;
 				}
-				var bf = bindingFlagsRegulars;
+				var bf = BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public;
 				//MethodInfo method = this.GetType().GetMethod("MyEventHandler", bf);
 				var act = (new Action<object, object>((sender, eventargs) => {
 					try
@@ -3065,9 +3065,15 @@ namespace PuvoxLibrary
 				// return int.Parse(DateTime.ParseExact(timenow.ToString("0000"), "HHmm", null).AddMinutes((double)added_or_subtracted).ToString("HHmm"));
 			}
 
-			public static DateTime DatetimeKindCorrect(DateTime dt)
+			//if (dt.Kind == DateTimeKind.Unspecified) {
+			//	dt = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+			//}
+			//return dt;
+			// DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+			public static DateTime DatetimeUtcKindIfUnspecified(DateTime dt)
 			{
-				if (dt.Kind == DateTimeKind.Unspecified) {
+				if (dt.Kind == DateTimeKind.Unspecified)
+				{
 					dt = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
 				}
 				return dt;
@@ -3098,6 +3104,10 @@ namespace PuvoxLibrary
 			}
 			//UtcStringToDatetime(string gmtStr) return DateTime.ParseExact(gmtStr, "yyyy-MM-dd HH:mm:ss Z", CultureInfo.InvariantCulture);
 
+			public static DateTime convertUnspecifiedDatetimeFromLocalToUtc(DateTime dt)
+			{
+				return TimeZoneInfo.ConvertTime(dt, TimeZoneInfo.Local, TimeZoneInfo.Utc);
+			}
 			public static DateTime UtcDatetime()
 			{
 				return UtcDatetimeFrom(DateTime.Now);
@@ -3159,12 +3169,12 @@ namespace PuvoxLibrary
 			//
 			public static DateTime helper_DatetimeToUniversalTime(DateTime dt)
 			{
-				dt = DatetimeKindCorrect(dt);
+				//dt = DatetimeUtcKindIfUnspecified(dt);
 				return dt.ToUniversalTime();
 			}
 			public static DateTime helper_DatetimeToLocalTime(DateTime dt)
 			{
-				dt = DatetimeKindCorrect(dt);
+				//dt = DatetimeUtcKindIfUnspecified(dt);
 				return dt.ToLocalTime();
 			}
 			//  return date.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
@@ -3692,7 +3702,7 @@ namespace PuvoxLibrary
 			if (MethodExists(null, "GTranslate_callback"))
 			{
 				Type typeFromHandle = typeof(Methods);
-				MethodInfo method = typeFromHandle.GetMethod("GTranslate_callback", bindingFlagsRegulars);
+				MethodInfo method = typeFromHandle.GetMethod("GTranslate_callback", BindingFlags.Instance | BindingFlags.Public);
 				result = (string)method.Invoke(null, new object[]  //this instead of null
 				{
 					what,
@@ -3849,9 +3859,11 @@ namespace PuvoxLibrary
 			; //System.Collections.ObjectModel.Collection 
 
 			string result = "";
-			result = NL + indentPhrase + (currentDeep == 1 ? ("<----------------- START ----------------->") : "-----------") + " >>>>> TYPE: " + obj.GetType().ToString() + " [" + obj.GetType().Module + " ] --->" + NL;
+			bool isNull = obj == null;
+			string type =isNull ? "null" : obj.GetType().ToString();
+			result = NL + indentPhrase + (currentDeep == 1 ? ("<----------------- START ----------------->") : "-----------") + " >>>>> TYPE: " + type + " [" + (isNull ? "":obj.GetType().Module.ToString()) + " ] --->" + NL;
 
-			if (obj == null)
+			if (isNull)
 			{
 				result += "object is NULL";
 			}
@@ -3860,8 +3872,8 @@ namespace PuvoxLibrary
 				result += obj.ToString();
 				print_("SIMPLE:" + result);
 			}
-			else try
-				{
+			else {
+				try {
 					string tmp1 = tryEnumerabledString(obj, " ");
 					if (tmp1 != "")
 					{
@@ -3982,6 +3994,7 @@ namespace PuvoxLibrary
 					result += ExceptionMessage(e, obj);
 					m(result);
 				}
+			}
 			string finalTxt = "";
 			foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
 			{
@@ -4161,7 +4174,7 @@ namespace PuvoxLibrary
 			T result;
 			try
 			{
-				PropertyInfo property = obj_.GetType().GetProperty(propName);
+				PropertyInfo property = obj_.GetType().GetProperty(propName, bindingFlagsRegulars);
 				if (property != null)
 				{
 					if (typeof(T) == typeof(string))
@@ -4183,7 +4196,7 @@ namespace PuvoxLibrary
 				}
 				else
 				{
-					FieldInfo field = obj_.GetType().GetField(propName);
+					FieldInfo field = obj_.GetType().GetField(propName, bindingFlagsRegulars);
 					if (field != null)
 					{
 						if (typeof(T) == typeof(string))
@@ -4216,8 +4229,37 @@ namespace PuvoxLibrary
 			return result;
 		}
 
+		public static object propertyGet_object(object obj_, string propName)
+		{
+			object res = null;
+			try
+			{
+				PropertyInfo property = obj_.GetType().GetProperty(propName, bindingFlagsRegulars);
+				if (property != null)
+				{
+					res = property.GetValue(obj_, null);
+				}
+				else
+				{
+					FieldInfo field = obj_.GetType().GetField(propName, bindingFlagsRegulars);
+					if (field != null)
+					{
+						res = field.GetValue(obj_);
+					} else
+                    {
+						res = null;
+					}
+				}
+			}
+			catch (Exception exc)
+			{
+				res = null;
+			}
+			return res;
+		}
 
-		// older propertyset : https://pastebin.com/W3WUDsWg
+
+		// older propertyset : https://pastebin_com/W3WUDsWg
 		public static bool propertySet(object obj_, string propName, object value)
 		{
 			PropertyInfo propertyInfo = obj_.GetType().GetProperty(propName, bindingFlagsRegulars) ;// (bindingFlagsRegulars).FirstOrDefault((PropertyInfo x) => x.Name.Equals(propName)); //, StringComparison.OrdinalIgnoreCase
@@ -4945,7 +4987,7 @@ namespace PuvoxLibrary
 			//if (dispose) logForm.Dispose();
 			//logForm = null;
 		}
-
+		#endregion
 
 
 		#region Log 
@@ -6036,5 +6078,3 @@ namespace PuvoxLibrary
 
 	}
 }
-
-#endregion
