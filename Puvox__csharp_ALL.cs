@@ -3085,7 +3085,11 @@ namespace PuvoxLibrary
 			}
 			public static string DatetimeToStringLocal(DateTime dt, bool withMS = true, bool withT = false)
 			{
-				return helper_DatetimeToLocalTime(dt).ToString("yyyy-MM-dd" + (withT ? "T" : "") + "HH:mm:ss" + (withMS ? ".fff" : ""));
+				return helper_DatetimeToLocalTime(dt).ToString("yyyy-MM-dd" + (withT ? "T" : " ") + "HH:mm:ss" + (withMS ? ".fff" : ""));
+			}
+			public static string DatetimeToStringUndefined(DateTime dt, bool withMS = true, bool withT = false)
+			{
+				return dt.ToString("yyyy-MM-dd" + (withT ? "T" : " ") + "HH:mm:ss" + (withMS ? ".fff" : ""));
 			}
 
 			public static DateTime StringToDatetime(string s, string format)
@@ -3128,6 +3132,16 @@ namespace PuvoxLibrary
 			{
 				// epoch
 				return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds((double)timestampMS);
+			}
+			public static DateTime UtcTimestampToLocalDatetime(long timestampMS)
+			{
+				// epoch
+				return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Local).AddMilliseconds((double)timestampMS);
+			}
+			public static DateTime UtcTimestampToUnspecifiedDatetime(long timestampMS)
+			{
+				// epoch
+				return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Unspecified).AddMilliseconds((double)timestampMS);
 			}
 
 
@@ -4287,7 +4301,13 @@ namespace PuvoxLibrary
 			throw new Exception("can not find " + propName);
 		}
 
-		
+		// for private/statis/internal class
+		//Type typeObject = typeof(TheApp.XyzNs.WhateverClass).Assembly.GetType("TheApp.XyzNs.PrivateClass");
+		//Print(typeObject);
+		//PropertyInfo propertyInfo = typeObject.GetProperty("WhateverField", BindingFlags.NonPublic | BindingFlags.Static);
+		//Print(propertyInfo.GetValue(null));
+		//try { propertyInfo.SetValue("ASDDD", null); } catch (Exception ex) { Print(ex.ToString()); 
+
 		public static BindingFlags bindingFlagsForField = BindingFlags.GetField | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 		private static FieldInfo GetBackingField(object obj_, PropertyInfo pi)
 		{
