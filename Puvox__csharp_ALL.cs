@@ -1724,6 +1724,9 @@ namespace PuvoxLibrary
 			return new Random(seed).Next(min, max);
 		}
  
+		public static string Capitalize(string str) {
+			return char.ToUpper(str[0]) + str.Substring(1);
+		}
 		public static string convertBackSlashes(string path)
 		{
 			return path.Replace("/", "\\");
