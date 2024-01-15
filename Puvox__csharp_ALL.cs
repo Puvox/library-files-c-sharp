@@ -1581,8 +1581,18 @@ namespace PuvoxLibrary
 		public static string[] splitByString(string what, string with)
         {
 			return what.Split(new string[] { with }, StringSplitOptions.None);
+			// System.Text.RegularExpressions.Regex.Split(what, with); // benchmark 2.2 times slower
 		}
 
+		public static string ReplaceFirst(string text, string search, string replace)
+		{
+			int pos = text.IndexOf(search);
+			if (pos < 0)
+			{
+				return text;
+			}
+			return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
+		}
 		public static string sanitizer(string dirtyString)
 		{
 			string a = "replace";
@@ -2321,7 +2331,7 @@ namespace PuvoxLibrary
 
 
 		// i.e:  PuvoxLibrary.Methods.attachEvents(foundChart, new Action<object>(Print));
-		public static void attachEvents(object obj, Action<object> printAct)
+		public static void attachEvents(object obj, Action<object> printAct, Type eventType = null)
 		{
 			try
 			{
@@ -2345,17 +2355,19 @@ namespace PuvoxLibrary
 							if (eventargs is System.EventArgs)
 							{
 								System.EventArgs ee = eventargs as System.EventArgs;
-							} else if (eventargs is System.Windows.RoutedEventArgs)
-                            {
-								var ee = eventargs as System.Windows.RoutedEventArgs;
-								var sr = ee.Source;
-								str += sr ==null ? "" : " [" + sr.ToString() +"] ";
-								var sr2 = ee.RoutedEvent;
-								str += sr2 == null ? "" : " [" + sr2.Name + "] ";
-								var sr3 = ee.OriginalSource;
-								str += sr3 == null ? "" : " [" + sr3.ToString() + "] ";
 							}
-						}
+                            // WPF specific: 
+                            else if (eventType != null && eventType.Name == "System.Windows.RoutedEventArgs")
+                            {
+								dynamic ee = eventargs; // as System.Windows.RoutedEventArgs;
+                                var sr = ee.Source;
+                                str += sr == null ? "" : " [" + sr.ToString() + "] ";
+                                var sr2 = ee.RoutedEvent;
+                                str += sr2 == null ? "" : " [" + sr2.Name + "] ";
+                                var sr3 = ee.OriginalSource;
+                                str += sr3 == null ? "" : " [" + sr3.ToString() + "] ";
+                            }
+                        }
 						else str += "NULL";
 						printAct(str);
 					}
@@ -2408,37 +2420,32 @@ namespace PuvoxLibrary
 
 		public static string GetControlText(Form obj, object which)
 		{
-			if (which is Control)
-			{
+			if (which is Control) {
 				Control which_ = (Control)which;
 				if (which_.InvokeRequired)
 				{
-
-					return which_.Invoke(new Func<string>(() => { return which_.Text; })).ToString();
+					var value = which_.Invoke(new Func<string>(() => { return which_.Text; })).ToString();
+					return value;
 				}
 				else
 				{
 					return which_.Text;
 				}
 			}
-			else
-			{
+			else {
 				string which_ = (string)which;
-				if (obj.InvokeRequired)
-				{
+				if (obj.InvokeRequired) {
 					return obj.Invoke(new Func<string>(() => {
 						System.Windows.Forms.Control[] array = obj.Controls.Find(which_, true);
 						return (array.Length <= 0) ? "cant find control" : array[0].Text;
 					})).ToString();
 				}
-				else
-				{
+				else {
 					System.Windows.Forms.Control[] array = obj.Controls.Find(which_, true);
 					return (array.Length <= 0) ? "cant find control" : array[0].Text;
 				}
 			}
 		}
-
 
 		// BASIC GET & SET
 		public static string controlValueGet(Control control)
@@ -2455,6 +2462,7 @@ namespace PuvoxLibrary
 			}
 			return value;
 		}
+
 		public static bool controlValueSet(Control control, string value)
 		{
 			//checkbox checking need to be obtained as string
@@ -2469,6 +2477,7 @@ namespace PuvoxLibrary
 			return true;
 		}
 		// #############
+
 		public static List<Control> GetAllControls(Control container)
 		{
 			List<Control> ControlList = new List<Control>();
@@ -2515,7 +2524,6 @@ namespace PuvoxLibrary
 					SetControlText(form, key, kv.Value["en"]);
 			}
 		}
-
 
 		public static bool GetUninstallString2(string ProductName)
 		{
@@ -3887,7 +3895,7 @@ namespace PuvoxLibrary
 			else if (IsSimpleType(obj))
 			{
 				result += obj.ToString();
-				print_("SIMPLE:" + result);
+				// print_("SIMPLE:" + result);
 			}
 			else {
 				try {
@@ -4024,11 +4032,11 @@ namespace PuvoxLibrary
 			result = result + indentPhrase + ((currentDeep == 1) ? (NL + "<----------------- END ---------------------->" + NL + NL) : "-----------") + NL;
 			return result;
 		}
-		private static FieldInfo GetInheritedPrivateField(Type type, string fieldName)
+		public static FieldInfo GetInheritedPrivateField(Type type, string fieldName)
 		{
 			do
 			{
-				var field = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+				var field = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
 
 				if (field != null)
 				{
@@ -4995,8 +5003,8 @@ namespace PuvoxLibrary
 			//
 			System.Windows.Forms.Button saveButton = new System.Windows.Forms.Button();
 			form1.Controls.Add(saveButton);
-			saveButton.Text = "OK";
-			controlSetLocation(saveButton, textarea.Parent.Width / 2 - saveButton.Width / 2, form1.Height - saveButton.Height * 3);
+			saveButton.Text = "SAVE";
+			controlSetLocation(saveButton, form1.Height - saveButton.Height * 3, form1.Width/2 - saveButton.Width/2);
 			// object sender, EventArgs e   // new EventHandler(delegate (Object o, EventArgs a) { //snip });
 			// EventHandler handler = (s, e) => MessageBox.Show("Woho"); 
 			saveButton.Click += (sender, args) => { sender_.Text = textarea.Text; form1.Close(); };
